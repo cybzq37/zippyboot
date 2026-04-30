@@ -1,0 +1,79 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: zippyboot-app
+  datasource:
+    url: jdbc:postgresql://localhost:5432/zippyboot
+    username: postgres
+    password: postgres
+    driver-class-name: org.postgresql.Driver
+  data:
+    redis:
+      host: localhost
+      port: 6379
+      database: 0
+    elasticsearch:
+      uris: http://localhost:9200
+  kafka:
+    bootstrap-servers: localhost:9092
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.apache.kafka.common.serialization.StringSerializer
+    consumer:
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      group-id: zippyboot-group
+      auto-offset-reset: earliest
+
+mybatis-plus:
+  configuration:
+    map-underscore-to-camel-case: true
+    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
+
+sa-token:
+  token-name: Authorization
+  timeout: 2592000
+  is-concurrent: true
+  is-share: false
+  token-style: uuid
+  is-log: true
+
+springdoc:
+  swagger-ui:
+    path: /swagger-ui.html
+  api-docs:
+    path: /v3/api-docs
+
+zippyboot:
+  infra:
+    redis:
+      enabled: true
+      key-prefix: "zippy:"
+      default-ttl-seconds: 3600
+    kafka:
+      enabled: true
+      default-topic: zippyboot-topic
+      consumer-group: zippyboot-group
+    postgres:
+      enabled: true
+      schema: public
+      default-page-size: 20
+    mybatis:
+      enabled: true
+      map-underscore-to-camel-case: true
+      print-sql: true
+    es:
+      enabled: true
+      index-prefix: zippy_
+      shards: 1
+      replicas: 0
+    geotools:
+      enabled: true
+      default-source-epsg: EPSG:4326
+      default-target-epsg: EPSG:3857
+    satoken:
+      enabled: true
+      login-type: login
+      token-prefix: Bearer
