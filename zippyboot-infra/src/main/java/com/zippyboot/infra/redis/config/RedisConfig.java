@@ -9,7 +9,6 @@ import org.springframework.stereotype.Component;
 @ConfigurationProperties(prefix = "zippyboot.infra.redis")
 public class RedisConfig {
 
-    private boolean enabled = true;
     private String keyPrefix = "zippy:";
     private long defaultTtlSeconds = 3600;
 }

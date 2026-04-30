@@ -3,14 +3,12 @@ package com.zippyboot.infra.kafka.service;
 import com.zippyboot.infra.kafka.config.KafkaConfig;
 import lombok.RequiredArgsConstructor;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Component;
 
 @Component
 @RequiredArgsConstructor
 @ConditionalOnBean(KafkaTemplate.class)
-@ConditionalOnProperty(prefix = "zippyboot.infra.kafka", name = "enabled", havingValue = "true", matchIfMissing = true)
 public class KafkaService {
 
     private final KafkaTemplate<String, String> kafkaTemplate;

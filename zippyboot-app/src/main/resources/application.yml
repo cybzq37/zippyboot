@@ -5,10 +5,14 @@ spring:
   application:
     name: zippyboot-app
   datasource:
-    url: jdbc:postgresql://localhost:5432/zippyboot
-    username: postgres
-    password: postgres
-    driver-class-name: org.postgresql.Driver
+    dynamic:
+      primary: master
+      datasource:
+        master:
+          url: jdbc:postgresql://localhost:5432/zippyboot
+          username: postgres
+          password: postgres
+          driver-class-name: org.postgresql.Driver
   data:
     redis:
       host: localhost
@@ -49,31 +53,21 @@ springdoc:
 zippyboot:
   infra:
     redis:
-      enabled: true
       key-prefix: "zippy:"
       default-ttl-seconds: 3600
     kafka:
-      enabled: true
       default-topic: zippyboot-topic
       consumer-group: zippyboot-group
-    postgres:
-      enabled: true
-      schema: public
-      default-page-size: 20
     mybatis:
-      enabled: true
       map-underscore-to-camel-case: true
       print-sql: true
     es:
-      enabled: true
       index-prefix: zippy_
       shards: 1
       replicas: 0
     geotools:
-      enabled: true
       default-source-epsg: EPSG:4326
       default-target-epsg: EPSG:3857
     satoken:
-      enabled: true
       login-type: login
       token-prefix: Bearer

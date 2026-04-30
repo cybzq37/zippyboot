@@ -4,7 +4,6 @@ import cn.dev33.satoken.stp.StpUtil;
 import com.zippyboot.api.dto.HealthDto;
 import com.zippyboot.infra.es.service.ElasticsearchService;
 import com.zippyboot.infra.kafka.service.KafkaService;
-import com.zippyboot.infra.postgres.service.PostgresService;
 import com.zippyboot.infra.redis.service.RedisService;
 import com.zippyboot.infra.satoken.service.SaTokenService;
 import com.zippyboot.model.ApiResponse;
@@ -25,7 +24,6 @@ public class TemplateController {
 
     private final ObjectProvider<RedisService> redisService;
     private final ObjectProvider<KafkaService> kafkaService;
-    private final ObjectProvider<PostgresService> postgresService;
     private final ObjectProvider<ElasticsearchService> elasticsearchService;
     private final ObjectProvider<SaTokenService> saTokenService;
 
@@ -51,7 +49,6 @@ public class TemplateController {
         Map<String, Object> payload = new HashMap<>();
         payload.put("redis", redisService.getIfAvailable() != null);
         payload.put("kafka", kafkaService.getIfAvailable() != null);
-        payload.put("postgres", postgresService.getIfAvailable() != null);
         payload.put("es", elasticsearchService.getIfAvailable() != null);
         payload.put("satoken", saTokenService.getIfAvailable() != null);
         return ApiResponse.ok(payload);

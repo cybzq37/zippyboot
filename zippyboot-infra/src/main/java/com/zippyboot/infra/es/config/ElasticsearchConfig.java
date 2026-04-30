@@ -9,7 +9,6 @@ import org.springframework.stereotype.Component;
 @ConfigurationProperties(prefix = "zippyboot.infra.es")
 public class ElasticsearchConfig {
 
-    private boolean enabled = true;
     private String indexPrefix = "zippy_";
     private int shards = 1;
     private int replicas = 0;

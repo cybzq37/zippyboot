@@ -9,7 +9,6 @@ import org.springframework.stereotype.Component;
 @ConfigurationProperties(prefix = "zippyboot.infra.kafka")
 public class KafkaConfig {
 
-    private boolean enabled = true;
     private String defaultTopic = "zippyboot-topic";
     private String consumerGroup = "zippyboot-group";
 }

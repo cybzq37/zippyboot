@@ -9,7 +9,6 @@ import org.springframework.stereotype.Component;
 @ConfigurationProperties(prefix = "zippyboot.infra.satoken")
 public class SaTokenConfig {
 
-    private boolean enabled = true;
     private String loginType = "login";
     private String tokenPrefix = "Bearer";
 }

@@ -9,7 +9,6 @@ import org.springframework.stereotype.Component;
 @ConfigurationProperties(prefix = "zippyboot.infra.mybatis")
 public class MybatisConfig {
 
-    private boolean enabled = true;
     private boolean mapUnderscoreToCamelCase = true;
     private boolean printSql = true;
 }
