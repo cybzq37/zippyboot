@@ -1,16 +1,50 @@
 package com.zippyboot.kit.util;
 
-import cn.hutool.extra.spring.SpringUtil;
 import org.springframework.aop.framework.AopContext;
+import org.springframework.beans.BeansException;
+import org.springframework.beans.factory.ListableBeanFactory;
 import org.springframework.beans.factory.NoSuchBeanDefinitionException;
 import org.springframework.context.ApplicationContext;
+import org.springframework.context.ApplicationContextAware;
+import org.springframework.stereotype.Component;
 
 /**
  * spring工具类
  *
  * @author lichunqing
  */
-public final class SpringUtils extends SpringUtil {
+@Component
+public class SpringUtils implements ApplicationContextAware {
+
+    private static ApplicationContext applicationContext;
+
+    @Override
+    public void setApplicationContext(ApplicationContext applicationContext) throws BeansException {
+        SpringUtils.applicationContext = applicationContext;
+    }
+
+    private static ListableBeanFactory getBeanFactory() {
+        if (applicationContext == null) {
+            throw new IllegalStateException("ApplicationContext has not been initialized");
+        }
+        return applicationContext;
+    }
+
+    public static ApplicationContext getApplicationContext() {
+        return applicationContext;
+    }
+
+    public static <T> T getBean(Class<T> clazz) {
+        return getBeanFactory().getBean(clazz);
+    }
+
+    public static <T> T getBean(String name, Class<T> clazz) {
+        return getBeanFactory().getBean(name, clazz);
+    }
+
+    public static Object getBean(String name) {
+        return getBeanFactory().getBean(name);
+    }
 
     /**
      * 如果BeanFactory包含一个与所给名称匹配的bean定义，则返回true

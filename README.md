@@ -56,3 +56,6 @@ After startup:
 
 子模块保留固定写法 `<version>1.0.0-SNAPSHOT</version>`  
 升级版本时只执行一次命令批量更新所有子模块 `mvn -N versions:update-child-modules`
+
+
+还缺少定时任务模块

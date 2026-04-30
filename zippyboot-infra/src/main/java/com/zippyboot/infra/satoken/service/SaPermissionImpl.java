@@ -1,8 +1,8 @@
-package com.navinfo.common.satoken.core.service;
+package com.zippyboot.infra.satoken.service;
 
 import cn.dev33.satoken.stp.StpInterface;
 
-import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 /**
@@ -24,7 +24,7 @@ public class SaPermissionImpl implements StpInterface {
 //        } else if (userType == UserType.APP_USER) {
 //            // 其他端 自行根据业务编写
 //        }
-        return new ArrayList<>();
+        return Collections.emptyList();
     }
 
     /**
@@ -39,6 +39,6 @@ public class SaPermissionImpl implements StpInterface {
 //        } else if (userType == UserType.APP_USER) {
 //            // 其他端 自行根据业务编写
 //        }
-        return new ArrayList<>();
+        return Collections.emptyList();
     }
 }

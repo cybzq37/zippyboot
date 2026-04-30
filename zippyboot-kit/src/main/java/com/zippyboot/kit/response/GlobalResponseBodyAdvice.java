@@ -78,7 +78,8 @@ public class GlobalResponseBodyAdvice implements ResponseBodyAdvice<Object> {
     }
 
     private String extractPath(ServerHttpRequest request) {
-        if (request instanceof ServletServerHttpRequest servletRequest) {
+        if (request instanceof ServletServerHttpRequest) {
+            ServletServerHttpRequest servletRequest = (ServletServerHttpRequest) request;
             return servletRequest.getServletRequest().getRequestURI();
         }
         return request.getURI() == null ? "" : request.getURI().getPath();

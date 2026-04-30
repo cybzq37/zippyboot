@@ -1,10 +1,7 @@
 package com.zippyboot.kit.okhttp;
 
-import lombok.Data;
-
 import java.io.File;
 
-@Data
 public class HttpFormDataFile {
 
     private String fieldName; // 字段名称
@@ -51,5 +48,45 @@ public class HttpFormDataFile {
 
     private static boolean isBlank(String str) {
         return str == null || str.trim().isEmpty();
+    }
+
+    public String getFieldName() {
+        return fieldName;
+    }
+
+    public void setFieldName(String fieldName) {
+        this.fieldName = fieldName;
+    }
+
+    public String getContentType() {
+        return contentType;
+    }
+
+    public void setContentType(String contentType) {
+        this.contentType = contentType;
+    }
+
+    public String getFileName() {
+        return fileName;
+    }
+
+    public void setFileName(String fileName) {
+        this.fileName = fileName;
+    }
+
+    public byte[] getFileData() {
+        return fileData;
+    }
+
+    public void setFileData(byte[] fileData) {
+        this.fileData = fileData;
+    }
+
+    public File getFile() {
+        return file;
+    }
+
+    public void setFile(File file) {
+        this.file = file;
     }
 }

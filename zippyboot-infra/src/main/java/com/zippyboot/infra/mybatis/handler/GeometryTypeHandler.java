@@ -1,11 +1,10 @@
-package com.navinfo.common.core.mybatis.handler;
+package com.zippyboot.infra.mybatis.handler;
 
-import com.navinfo.common.core.utils.StringUtils;
 import lombok.extern.slf4j.Slf4j;
-import net.postgis.jdbc.PGgeometry;
 import org.apache.ibatis.type.BaseTypeHandler;
 import org.apache.ibatis.type.JdbcType;
 import org.apache.ibatis.type.MappedTypes;
+import org.postgresql.util.PGobject;
 
 import java.sql.CallableStatement;
 import java.sql.PreparedStatement;
@@ -18,43 +17,31 @@ public class GeometryTypeHandler extends BaseTypeHandler<String> {
 
     @Override
     public void setNonNullParameter(PreparedStatement ps, int i, String parameter, JdbcType jdbcType) throws SQLException {
-        PGgeometry pGgeometry = new PGgeometry(parameter);
-        ps.setObject(i, pGgeometry);
+        PGobject geometry = new PGobject();
+        geometry.setType("geometry");
+        geometry.setValue(parameter);
+        ps.setObject(i, geometry);
     }
 
     @Override
     public String getNullableResult(ResultSet rs, String columnName) throws SQLException {
-        if (StringUtils.isEmpty(rs.getString(columnName))){
-            return null;
-        }
-        PGgeometry pGgeometry = new PGgeometry(rs.getString(columnName));
-        if (pGgeometry == null) {
-            return null;
-        }
-        return pGgeometry.toString();
+        String value = rs.getString(columnName);
+        return isBlank(value) ? null : value;
     }
 
     @Override
     public String getNullableResult(ResultSet rs, int columnIndex) throws SQLException {
-        if (StringUtils.isEmpty(rs.getString(columnIndex))){
-            return null;
-        }
-        PGgeometry pGgeometry = new PGgeometry(rs.getString(columnIndex));
-        if (pGgeometry == null) {
-            return null;
-        }
-        return pGgeometry.toString();
+        String value = rs.getString(columnIndex);
+        return isBlank(value) ? null : value;
     }
 
     @Override
     public String getNullableResult(CallableStatement cs, int columnIndex) throws SQLException {
-        if (StringUtils.isEmpty(cs.getString(columnIndex))){
-            return null;
-        }
-        PGgeometry pGgeometry = new PGgeometry(cs.getString(columnIndex));
-        if (pGgeometry == null) {
-            return null;
-        }
-        return pGgeometry.toString();
+        String value = cs.getString(columnIndex);
+        return isBlank(value) ? null : value;
+    }
+
+    private boolean isBlank(String value) {
+        return value == null || value.trim().isEmpty();
     }
 }

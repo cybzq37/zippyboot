@@ -1,6 +1,5 @@
 package com.zippyboot.kit.okhttp;
 
-import lombok.extern.slf4j.Slf4j;
 import okhttp3.Interceptor;
 import okhttp3.MediaType;
 import okhttp3.Request;
@@ -9,6 +8,8 @@ import okhttp3.Response;
 import okhttp3.ResponseBody;
 import okhttp3.Headers;
 import okio.Buffer;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.nio.charset.Charset;
@@ -18,8 +19,9 @@ import java.util.concurrent.TimeUnit;
 /**
  * okhttp 拦截器
  */
-@Slf4j
 public class HttpLogInterceptor implements Interceptor {
+
+    private static final Logger log = LoggerFactory.getLogger(HttpLogInterceptor.class);
 
     private static final Charset UTF8 = StandardCharsets.UTF_8;
     private static final long FULL_BODY_LOG_MAX_BYTES = 2048;
@@ -77,7 +79,12 @@ public class HttpLogInterceptor implements Interceptor {
         }
 
         MediaType mediaType = body.contentType();
-        long contentLength = body.contentLength();
+        long contentLength;
+        try {
+            contentLength = body.contentLength();
+        } catch (IOException ex) {
+            contentLength = -1;
+        }
 
         if (isFileLike(mediaType, request.headers())) {
             return "<file-like request body, size=" + formatLength(contentLength) + ">";

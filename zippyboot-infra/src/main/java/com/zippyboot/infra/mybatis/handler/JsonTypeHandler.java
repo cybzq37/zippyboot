@@ -1,4 +1,4 @@
-package com.navinfo.common.core.mybatis.handler;
+package com.zippyboot.infra.mybatis.handler;
 
 import com.baomidou.mybatisplus.core.toolkit.Assert;
 import com.baomidou.mybatisplus.extension.handlers.AbstractJsonTypeHandler;
@@ -7,7 +7,6 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JavaType;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.type.TypeFactory;
-import com.navinfo.common.core.utils.JsonUtils;
 import org.apache.ibatis.type.JdbcType;
 import org.apache.ibatis.type.MappedJdbcTypes;
 import org.apache.ibatis.type.MappedTypes;
@@ -24,7 +23,7 @@ import java.sql.SQLException;
 public class JsonTypeHandler<T> extends AbstractJsonTypeHandler<T> {
 
 
-    private static ObjectMapper OBJECT_MAPPER;
+    private static ObjectMapper OBJECT_MAPPER = new ObjectMapper();
 
 
     public JsonTypeHandler(Class<T> clazz) {
@@ -61,7 +60,7 @@ public class JsonTypeHandler<T> extends AbstractJsonTypeHandler<T> {
             if ("null".equals(str)) {
                 return null;
             }
-            return getObjectMapper().writeValueAsString(obj);
+            return str;
         } catch (JsonProcessingException e) {
             log.error("serialize " + obj + " to json error ", e);
             throw new RuntimeException(e);
@@ -69,9 +68,6 @@ public class JsonTypeHandler<T> extends AbstractJsonTypeHandler<T> {
     }
 
     public static ObjectMapper getObjectMapper() {
-        if (null == OBJECT_MAPPER) {
-            OBJECT_MAPPER = JsonUtils.getObjectMapper();
-        }
         return OBJECT_MAPPER;
     }
 

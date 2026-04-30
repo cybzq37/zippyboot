@@ -2,7 +2,8 @@ package com.zippyboot.kit.exception;
 
 import jakarta.validation.ConstraintViolation;
 import jakarta.validation.ConstraintViolationException;
-import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.BindException;
@@ -18,9 +19,10 @@ import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 
-@Slf4j
 @RestControllerAdvice
 public class GlobalExceptionHandler {
+
+    private static final Logger log = LoggerFactory.getLogger(GlobalExceptionHandler.class);
 
     private final GlobalExceptionProperties properties;
 
@@ -45,7 +47,8 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ErrorResponse> handleMethodArgumentNotValid(MethodArgumentNotValidException ex, WebRequest request) {
         List<String> details = ex.getBindingResult().getAllErrors().stream()
                 .map(error -> {
-                    if (error instanceof FieldError fieldError) {
+                    if (error instanceof FieldError) {
+                        FieldError fieldError = (FieldError) error;
                         return fieldError.getField() + ": " + fieldError.getDefaultMessage();
                     }
                     return error.getDefaultMessage();
@@ -58,7 +61,8 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ErrorResponse> handleBindException(BindException ex, WebRequest request) {
         List<String> details = ex.getBindingResult().getAllErrors().stream()
                 .map(error -> {
-                    if (error instanceof FieldError fieldError) {
+                    if (error instanceof FieldError) {
+                        FieldError fieldError = (FieldError) error;
                         return fieldError.getField() + ": " + fieldError.getDefaultMessage();
                     }
                     return error.getDefaultMessage();

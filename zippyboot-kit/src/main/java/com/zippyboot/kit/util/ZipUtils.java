@@ -1,11 +1,12 @@
 package com.zippyboot.kit.util;
 
-import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.compress.archivers.zip.ZipArchiveEntry;
 import org.apache.commons.compress.archivers.zip.ZipArchiveInputStream;
 import org.apache.commons.compress.archivers.zip.ZipArchiveOutputStream;
 import org.apache.commons.compress.utils.IOUtils;
 import org.apache.commons.io.FilenameUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
@@ -28,8 +29,9 @@ import java.util.Locale;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 
-@Slf4j
 public class ZipUtils {
+
+    private static final Logger log = LoggerFactory.getLogger(ZipUtils.class);
 
     private static final String MAC_OSX_PREFIX = "__MACOSX";
     private static final String FILE_MATCH_MODE = "file";

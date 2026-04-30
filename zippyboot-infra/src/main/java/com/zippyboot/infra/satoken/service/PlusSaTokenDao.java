@@ -1,13 +1,15 @@
-package com.navinfo.common.satoken.core.dao;
+package com.zippyboot.infra.satoken.service;
 
 import cn.dev33.satoken.dao.SaTokenDao;
 import cn.dev33.satoken.util.SaFoxUtil;
-import com.navinfo.common.redis.utils.RedisUtils;
+import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.data.redis.core.ValueOperations;
 
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.Set;
 
 /**
  * Sa-Token持久层接口(使用框架自带RedisUtils实现 协议统一)
@@ -16,12 +18,23 @@ import java.util.List;
  */
 public class PlusSaTokenDao implements SaTokenDao {
 
+    private final RedisTemplate<String, Object> redisTemplate;
+
+    public PlusSaTokenDao(RedisTemplate<String, Object> redisTemplate) {
+        this.redisTemplate = redisTemplate;
+    }
+
+    private ValueOperations<String, Object> valueOps() {
+        return redisTemplate.opsForValue();
+    }
+
     /**
      * 获取Value，如无返空
      */
     @Override
     public String get(String key) {
-        return RedisUtils.get(key);
+        Object val = valueOps().get(key);
+        return val == null ? null : String.valueOf(val);
     }
 
     /**
@@ -34,9 +47,9 @@ public class PlusSaTokenDao implements SaTokenDao {
         }
         // 判断是否为永不过期
         if (timeout == SaTokenDao.NEVER_EXPIRE) {
-            RedisUtils.set(key, value);
+            valueOps().set(key, value);
         } else {
-            RedisUtils.set(key, value, Duration.ofSeconds(timeout));
+            valueOps().set(key, value, Duration.ofSeconds(timeout));
         }
     }
 
@@ -58,7 +71,7 @@ public class PlusSaTokenDao implements SaTokenDao {
      */
     @Override
     public void delete(String key) {
-        RedisUtils.delete(key);
+        redisTemplate.delete(key);
     }
 
     /**
@@ -66,7 +79,10 @@ public class PlusSaTokenDao implements SaTokenDao {
      */
     @Override
     public long getTimeout(String key) {
-        long timeout = RedisUtils.getTimeToLive(key);
+        Long timeout = redisTemplate.getExpire(key);
+        if (timeout == null) {
+            return SaTokenDao.NOT_VALUE_EXPIRE;
+        }
         return timeout < 0 ? timeout : timeout / 1000;
     }
 
@@ -86,7 +102,7 @@ public class PlusSaTokenDao implements SaTokenDao {
             }
             return;
         }
-        RedisUtils.expire(key, Duration.ofSeconds(timeout));
+        redisTemplate.expire(key, Duration.ofSeconds(timeout));
     }
 
 
@@ -95,7 +111,7 @@ public class PlusSaTokenDao implements SaTokenDao {
      */
     @Override
     public Object getObject(String key) {
-        return RedisUtils.get(key);
+        return valueOps().get(key);
     }
 
     /**
@@ -108,9 +124,9 @@ public class PlusSaTokenDao implements SaTokenDao {
         }
         // 判断是否为永不过期
         if (timeout == SaTokenDao.NEVER_EXPIRE) {
-            RedisUtils.set(key, object);
+            valueOps().set(key, object);
         } else {
-            RedisUtils.set(key, object, Duration.ofSeconds(timeout));
+            valueOps().set(key, object, Duration.ofSeconds(timeout));
         }
     }
 
@@ -132,7 +148,7 @@ public class PlusSaTokenDao implements SaTokenDao {
      */
     @Override
     public void deleteObject(String key) {
-        RedisUtils.delete(key);
+        redisTemplate.delete(key);
     }
 
     /**
@@ -140,7 +156,10 @@ public class PlusSaTokenDao implements SaTokenDao {
      */
     @Override
     public long getObjectTimeout(String key) {
-        long timeout = RedisUtils.getTimeToLive(key);
+        Long timeout = redisTemplate.getExpire(key);
+        if (timeout == null) {
+            return SaTokenDao.NOT_VALUE_EXPIRE;
+        }
         return timeout < 0 ? timeout : timeout / 1000;
     }
 
@@ -160,7 +179,7 @@ public class PlusSaTokenDao implements SaTokenDao {
             }
             return;
         }
-        RedisUtils.expire(key, Duration.ofSeconds(timeout));
+        redisTemplate.expire(key, Duration.ofSeconds(timeout));
     }
 
 
@@ -169,8 +188,12 @@ public class PlusSaTokenDao implements SaTokenDao {
      */
     @Override
     public List<String> searchData(String prefix, String keyword, int start, int size, boolean sortType) {
-        Collection<String> keys = RedisUtils.keys(prefix + "*" + keyword + "*");
-        List<String> list = new ArrayList<>(keys);
+        Set<String> keys = redisTemplate.keys(prefix + "*" + keyword + "*");
+        if (keys == null || keys.isEmpty()) {
+            return new ArrayList<>();
+        }
+        Collection<String> keyCollection = keys;
+        List<String> list = new ArrayList<>(keyCollection);
         return SaFoxUtil.searchList(list, start, size, sortType);
     }
 }

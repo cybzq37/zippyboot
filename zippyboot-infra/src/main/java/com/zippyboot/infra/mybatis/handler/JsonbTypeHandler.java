@@ -1,12 +1,10 @@
-package com.navinfo.common.core.mybatis.handler;
+package com.zippyboot.infra.mybatis.handler;
 
 import com.fasterxml.jackson.core.JacksonException;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JavaType;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.type.TypeFactory;
-import com.navinfo.common.core.utils.JsonUtils;
-import com.navinfo.common.core.utils.StringUtils;
 import org.apache.ibatis.logging.Log;
 import org.apache.ibatis.logging.LogFactory;
 import org.apache.ibatis.type.BaseTypeHandler;
@@ -40,7 +38,7 @@ public class JsonbTypeHandler<T> extends BaseTypeHandler<T> {
      */
     protected Type genericType;
 
-    private static ObjectMapper OBJECT_MAPPER;
+    private static ObjectMapper OBJECT_MAPPER = new ObjectMapper();
 
 
     public JsonbTypeHandler(Class<?> clazz) {
@@ -68,19 +66,19 @@ public class JsonbTypeHandler<T> extends BaseTypeHandler<T> {
     @Override
     public T getNullableResult(ResultSet rs, String columnName) throws SQLException {
         final String json = rs.getString(columnName);
-        return StringUtils.isBlank(json) ? null : parse(json);
+        return isBlank(json) ? null : parse(json);
     }
 
     @Override
     public T getNullableResult(ResultSet rs, int columnIndex) throws SQLException {
         final String json = rs.getString(columnIndex);
-        return StringUtils.isBlank(json) ? null : parse(json);
+        return isBlank(json) ? null : parse(json);
     }
 
     @Override
     public T getNullableResult(CallableStatement cs, int columnIndex) throws SQLException {
         final String json = cs.getString(columnIndex);
-        return StringUtils.isBlank(json) ? null : parse(json);
+        return isBlank(json) ? null : parse(json);
     }
 
     public Type getFieldType() {
@@ -110,15 +108,16 @@ public class JsonbTypeHandler<T> extends BaseTypeHandler<T> {
     }
 
     public static ObjectMapper getObjectMapper() {
-        if (null == OBJECT_MAPPER) {
-            OBJECT_MAPPER = JsonUtils.getObjectMapper();
-        }
         return OBJECT_MAPPER;
     }
 
     public static void setObjectMapper(ObjectMapper objectMapper) {
         Assert.notNull(objectMapper, "ObjectMapper should not be null");
         OBJECT_MAPPER = objectMapper;
+    }
+
+    private boolean isBlank(String value) {
+        return value == null || value.trim().isEmpty();
     }
 
 }
