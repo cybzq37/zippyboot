@@ -2,14 +2,13 @@ package com.zippyboot.kit.util;
 
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
-import org.springframework.cglib.beans.BeanCopier;
-import org.springframework.cglib.beans.BeanMap;
-import org.springframework.cglib.core.Converter;
 import org.springframework.beans.BeanWrapper;
 import org.springframework.beans.BeanWrapperImpl;
+import org.springframework.cglib.beans.BeanCopier;
+import org.springframework.cglib.beans.BeanMap;
 
-import java.util.LinkedHashMap;
 import java.util.Collections;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.HashSet;
@@ -25,228 +24,308 @@ import java.util.stream.Collectors;
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class BeanUtils {
 
-    /**
-     * 相同属性名称类型转换
-     * @param source 源对象
-     * @param actualEditable 目标对象类型
-     * @param <T> 目标对象泛型
-     * @return 返回目标对象
-     */
-    public static <T> T map(Object source, Class<T> actualEditable) {
-        if (source == null || actualEditable == null) {
-            return null;
-        }
-        try {
-            T target = actualEditable.getDeclaredConstructor().newInstance();
-            org.springframework.beans.BeanUtils.copyProperties(source, target);
-            return target;
-        } catch (Exception e) {
-            return null;
-        }
-    }
+	private static final Map<String, BeanCopier> BEAN_COPIER_CACHE = new ConcurrentHashMap<>();
 
-    public static String[] getNullPropertyNames (Object source) {
-        if (source == null) {
-            return new String[0];
-        }
-        final BeanWrapper src = new BeanWrapperImpl(source);
-        java.beans.PropertyDescriptor[] pds = src.getPropertyDescriptors();
+	/**
+	 * 对象映射(同名属性拷贝)。
+	 */
+	public static <T> T map(Object source, Class<T> actualEditable) {
+		return copy(source, actualEditable);
+	}
 
-        Set<String> emptyNames = new HashSet<>();
-        for(java.beans.PropertyDescriptor pd : pds) {
-            Object srcValue = src.getPropertyValue(pd.getName());
-            if (srcValue == null) {
-                emptyNames.add(pd.getName());
-            }
-        }
-        String[] result = new String[emptyNames.size()];
-        return emptyNames.toArray(result);
-    }
+	/**
+	 * 新建目标对象并执行属性拷贝。
+	 */
+	public static <T> T copy(Object source, Class<T> targetClass) {
+		if (source == null) {
+			return null;
+		}
+		T target = newInstance(targetClass);
+		copyProperties(source, target);
+		return target;
+	}
 
-    /**
-     * 忽略空字段
-     * @param src
-     * @param target
-     */
-    public static void copyPropertiesIgnoreNull(Object src, Object target){
-        if (src == null || target == null) {
-            return;
-        }
-        org.springframework.beans.BeanUtils.copyProperties(src, target, getNullPropertyNames(src));
-    }
+	/**
+	 * 拷贝到已存在的目标对象。
+	 */
+	public static <T, V> V copy(T source, V target) {
+		if (source == null || target == null) {
+			return target;
+		}
+		copyProperties(source, target);
+		return target;
+	}
 
-    /**
-     * 单对象基于class创建拷贝
-     *
-     * @param source 数据来源实体
-     * @param desc   描述对象 转换后的对象
-     * @return desc
-     */
-    public static <T, V> V copy(T source, Class<V> desc) {
-        if (source == null) {
-            return null;
-        }
-        if (desc == null) {
-            return null;
-        }
-        try {
-            final V target = desc.getDeclaredConstructor().newInstance();
-            return copy(source, target);
-        } catch (Exception e) {
-            return null;
-        }
-    }
+	/**
+	 * 新建目标对象并忽略源对象中的 null 属性。
+	 */
+	public static <T> T copyIgnoreNull(Object source, Class<T> targetClass) {
+		if (source == null) {
+			return null;
+		}
+		T target = newInstance(targetClass);
+		copyPropertiesIgnoreNull(source, target);
+		return target;
+	}
 
-    /**
-     * 单对象基于对象创建拷贝
-     *
-     * @param source 数据来源实体
-     * @param desc   转换后的对象
-     * @return desc
-     */
-    public static <T, V> V copy(T source, V desc) {
-        if (source == null) {
-            return null;
-        }
-        if (desc == null) {
-            return null;
-        }
-        BeanCopier beanCopier = BeanCopierCache.INSTANCE.get(source.getClass(), desc.getClass(), null);
-        beanCopier.copy(source, desc, null);
-        return desc;
-    }
+	/**
+	 * 普通属性拷贝(不忽略 null)。
+	 */
+	public static void copyProperties(Object source, Object target) {
+		if (source == null || target == null) {
+			return;
+		}
+		BeanCopier copier = getBeanCopier(source.getClass(), target.getClass());
+		copier.copy(source, target, null);
+	}
 
-    /**
-     * 列表对象基于class创建拷贝
-     *
-     * @param sourceList 数据来源实体列表
-     * @param desc       描述对象 转换后的对象
-     * @return desc
-     */
-    public static <T, V> List<V> copyList(List<T> sourceList, Class<V> desc) {
-        if (sourceList == null || desc == null) {
-            return Collections.emptyList();
-        }
-        if (sourceList.isEmpty()) {
-            return Collections.emptyList();
-        }
-        return sourceList.stream().map(source -> copy(source, desc)).collect(Collectors.toList());
-    }
+	/**
+	 * 普通属性拷贝，可忽略指定字段。
+	 */
+	public static void copyProperties(Object source, Object target, String... ignoreProperties) {
+		if (source == null || target == null) {
+			return;
+		}
+		Set<String> ignoreSet = toIgnoreSet(ignoreProperties);
+		BeanMap sourceMap = BeanMap.create(source);
+		BeanMap targetMap = BeanMap.create(target);
+		for (Object keyObj : sourceMap.keySet()) {
+			String key = String.valueOf(keyObj);
+			if ("class".equals(key) || ignoreSet.contains(key) || !targetMap.containsKey(key)) {
+				continue;
+			}
+			try {
+				targetMap.put(key, sourceMap.get(key));
+			} catch (RuntimeException ignored) {
+				// 类型不匹配时忽略，保持与多数Bean拷贝工具一致
+			}
+		}
+	}
 
-    /**
-     * bean拷贝到map
-     *
-     * @param bean 数据来源实体
-     * @return map对象
-     */
-    @SuppressWarnings("unchecked")
-    public static <T> Map<String, Object> copyToMap(T bean) {
-        if (bean == null) {
-            return Collections.emptyMap();
-        }
-        return BeanMap.create(bean);
-    }
+	/**
+	 * 忽略 null 的属性拷贝。
+	 */
+	public static void copyPropertiesIgnoreNull(Object source, Object target) {
+		copyPropertiesIgnoreNull(source, target, new String[0]);
+	}
 
-    /**
-     * map拷贝到bean
-     *
-     * @param map       数据来源
-     * @param beanClass bean类
-     * @return bean对象
-     */
-    public static <T> T mapToBean(Map<String, Object> map, Class<T> beanClass) {
-        if (map == null || map.isEmpty()) {
-            return null;
-        }
-        if (beanClass == null) {
-            return null;
-        }
-        try {
-            T bean = beanClass.getDeclaredConstructor().newInstance();
-            return mapToBean(map, bean);
-        } catch (Exception e) {
-            return null;
-        }
-    }
+	/**
+	 * 忽略 null 的属性拷贝，并支持忽略指定字段。
+	 */
+	public static void copyPropertiesIgnoreNull(Object source, Object target, String... ignoreProperties) {
+		if (source == null || target == null) {
+			return;
+		}
+		Set<String> ignoreSet = toIgnoreSet(ignoreProperties);
+		BeanMap sourceMap = BeanMap.create(source);
+		BeanMap targetMap = BeanMap.create(target);
+		for (Object keyObj : sourceMap.keySet()) {
+			String key = String.valueOf(keyObj);
+			if ("class".equals(key) || ignoreSet.contains(key) || !targetMap.containsKey(key)) {
+				continue;
+			}
+			Object value = sourceMap.get(key);
+			if (value == null) {
+				continue;
+			}
+			try {
+				targetMap.put(key, value);
+			} catch (RuntimeException ignored) {
+				// 类型不匹配时忽略
+			}
+		}
+	}
 
-    /**
-     * map拷贝到bean
-     *
-     * @param map  数据来源
-     * @param bean bean对象
-     * @return bean对象
-     */
-    public static <T> T mapToBean(Map<String, Object> map, T bean) {
-        if (map == null || map.isEmpty()) {
-            return null;
-        }
-        if (bean == null) {
-            return null;
-        }
-        BeanMap.create(bean).putAll(map);
-        return bean;
-    }
+	/**
+	 * 列表拷贝到新列表。
+	 */
+	public static <T> List<T> copyList(List<?> sourceList, Class<T> targetClass) {
+		if (sourceList == null || sourceList.isEmpty()) {
+			return Collections.emptyList();
+		}
+		return sourceList.stream()
+				.map(source -> copy(source, targetClass))
+				.collect(Collectors.toList());
+	}
 
-    /**
-     * map拷贝到map
-     *
-     * @param map   数据来源
-     * @param clazz 返回的对象类型
-     * @return map对象
-     */
-    public static <T, V> Map<String, V> mapToMap(Map<String, T> map, Class<V> clazz) {
-        if (map == null || map.isEmpty() || clazz == null) {
-            return Collections.emptyMap();
-        }
-        Map<String, V> copyMap = new LinkedHashMap<>(map.size());
-        map.forEach((k, v) -> copyMap.put(k, copy(v, clazz)));
-        return copyMap;
-    }
+	/**
+	 * 列表拷贝到新列表，忽略 null 属性。
+	 */
+	public static <T> List<T> copyListIgnoreNull(List<?> sourceList, Class<T> targetClass) {
+		if (sourceList == null || sourceList.isEmpty()) {
+			return Collections.emptyList();
+		}
+		return sourceList.stream()
+				.map(source -> copyIgnoreNull(source, targetClass))
+				.collect(Collectors.toList());
+	}
 
-    /**
-     * BeanCopier属性缓存<br>
-     * 缓存用于防止多次反射造成的性能问题
-     *
-     * @author Looly
-     * @since 5.4.1
-     */
-    public enum BeanCopierCache {
-        /**
-         * BeanCopier属性缓存单例
-         */
-        INSTANCE;
+	/**
+	 * 将源列表按索引拷贝到已存在的目标列表。
+	 * 实际拷贝数量为两者长度的最小值，遇到空元素会跳过。
+	 */
+	public static <S, T> List<T> copyList(List<S> sourceList, List<T> targetList) {
+		if (sourceList == null || sourceList.isEmpty() || targetList == null || targetList.isEmpty()) {
+			return targetList == null ? Collections.emptyList() : targetList;
+		}
+		int size = Math.min(sourceList.size(), targetList.size());
+		for (int i = 0; i < size; i++) {
+			S source = sourceList.get(i);
+			T target = targetList.get(i);
+			if (source == null || target == null) {
+				continue;
+			}
+			copyProperties(source, target);
+		}
+		return targetList;
+	}
 
-        private final Map<String, BeanCopier> cache = new ConcurrentHashMap<>();
+	/**
+	 * Bean 转 Map(包含 null 值字段)。
+	 */
+	public static Map<String, Object> beanToMap(Object bean) {
+		if (bean == null) {
+			return Collections.emptyMap();
+		}
+		BeanMap beanMap = BeanMap.create(bean);
+		Map<String, Object> result = new LinkedHashMap<>();
+		for (Object keyObj : beanMap.keySet()) {
+			String key = String.valueOf(keyObj);
+			if ("class".equals(key)) {
+				continue;
+			}
+			result.put(key, beanMap.get(key));
+		}
+		return result;
+	}
 
-        /**
-         * 获得类与转换器生成的key在{@link BeanCopier}的Map中对应的元素
-         *
-         * @param srcClass    源Bean的类
-         * @param targetClass 目标Bean的类
-         * @param converter   转换器
-         * @return Map中对应的BeanCopier
-         */
-        public BeanCopier get(Class<?> srcClass, Class<?> targetClass, Converter converter) {
-            final String key = genKey(srcClass, targetClass, converter);
-            return cache.computeIfAbsent(key, k -> BeanCopier.create(srcClass, targetClass, converter != null));
-        }
+	/**
+	 * Bean 转 Map 别名方法。
+	 */
+	public static Map<String, Object> copyToMap(Object bean) {
+		return beanToMap(bean);
+	}
 
-        /**
-         * 获得类与转换器生成的key
-         *
-         * @param srcClass    源Bean的类
-         * @param targetClass 目标Bean的类
-         * @param converter   转换器
-         * @return 属性名和Map映射的key
-         */
-        private String genKey(Class<?> srcClass, Class<?> targetClass, Converter converter) {
-            final StringBuilder key = new StringBuilder()
-                .append(srcClass.getName()).append('#').append(targetClass.getName());
-            if(null != converter){
-                key.append('#').append(converter.getClass().getName());
-            }
-            return key.toString();
-        }
-    }
+	/**
+	 * Bean 转 Map，过滤 null 值字段。
+	 */
+	public static Map<String, Object> beanToMapIgnoreNull(Object bean) {
+		if (bean == null) {
+			return Collections.emptyMap();
+		}
+		BeanMap beanMap = BeanMap.create(bean);
+		Map<String, Object> result = new LinkedHashMap<>();
+		for (Object keyObj : beanMap.keySet()) {
+			String key = String.valueOf(keyObj);
+			if ("class".equals(key)) {
+				continue;
+			}
+			Object value = beanMap.get(key);
+			if (value != null) {
+				result.put(key, value);
+			}
+		}
+		return result;
+	}
+
+	/**
+	 * Map 转新建 Bean。
+	 */
+	public static <T> T mapToBean(Map<String, ?> map, Class<T> targetClass) {
+		T target = newInstance(targetClass);
+		mapToBean(map, target);
+		return target;
+	}
+
+	/**
+	 * Map 拷贝到已存在 Bean。
+	 */
+	public static void mapToBean(Map<String, ?> map, Object target) {
+		if (map == null || map.isEmpty() || target == null) {
+			return;
+		}
+		BeanWrapper targetWrapper = new BeanWrapperImpl(target);
+		for (Map.Entry<String, ?> entry : map.entrySet()) {
+			String propertyName = entry.getKey();
+			if (!targetWrapper.isWritableProperty(propertyName)) {
+				continue;
+			}
+			try {
+				targetWrapper.setPropertyValue(propertyName, entry.getValue());
+			} catch (RuntimeException ignored) {
+				// 转换失败的字段忽略
+			}
+		}
+	}
+
+	/**
+	 * 创建一个新的 Map 副本。
+	 */
+	public static Map<String, Object> copyToNewMap(Map<String, ?> source) {
+		if (source == null || source.isEmpty()) {
+			return Collections.emptyMap();
+		}
+		return new LinkedHashMap<>(source);
+	}
+
+	/**
+	 * Map value 按指定类型进行对象拷贝转换。
+	 */
+	public static <T, V> Map<String, V> mapToMap(Map<String, T> map, Class<V> clazz) {
+		if (map == null || map.isEmpty() || clazz == null) {
+			return Collections.emptyMap();
+		}
+		Map<String, V> copyMap = new LinkedHashMap<>(map.size());
+		map.forEach((key, value) -> copyMap.put(key, copy(value, clazz)));
+		return copyMap;
+	}
+
+	/**
+	 * 获取对象中值为 null 的属性名集合。
+	 */
+	public static Set<String> getNullPropertyNames(Object source) {
+		if (source == null) {
+			return Collections.emptySet();
+		}
+		BeanWrapper src = new BeanWrapperImpl(source);
+		Set<String> emptyNames = new HashSet<>();
+		for (java.beans.PropertyDescriptor propertyDescriptor : src.getPropertyDescriptors()) {
+			String propertyName = propertyDescriptor.getName();
+			if ("class".equals(propertyName)) {
+				continue;
+			}
+			Object srcValue = src.getPropertyValue(propertyName);
+			if (srcValue == null) {
+				emptyNames.add(propertyName);
+			}
+		}
+		return emptyNames;
+	}
+
+	private static BeanCopier getBeanCopier(Class<?> sourceClass, Class<?> targetClass) {
+		String cacheKey = sourceClass.getName() + "->" + targetClass.getName();
+		return BEAN_COPIER_CACHE.computeIfAbsent(cacheKey,
+				key -> BeanCopier.create(sourceClass, targetClass, false));
+	}
+
+	private static Set<String> toIgnoreSet(String... ignoreProperties) {
+		if (ignoreProperties == null || ignoreProperties.length == 0) {
+			return Collections.emptySet();
+		}
+		Set<String> set = new HashSet<>();
+		Collections.addAll(set, ignoreProperties);
+		return set;
+	}
+
+	private static <T> T newInstance(Class<T> targetClass) {
+		if (targetClass == null) {
+			throw new IllegalArgumentException("targetClass cannot be null");
+		}
+		try {
+			return targetClass.getDeclaredConstructor().newInstance();
+		} catch (Exception e) {
+			throw new IllegalArgumentException("Cannot instantiate target class: " + targetClass.getName(), e);
+		}
+	}
 
 }

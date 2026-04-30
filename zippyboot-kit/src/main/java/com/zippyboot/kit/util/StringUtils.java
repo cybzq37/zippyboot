@@ -20,6 +20,8 @@ public class StringUtils extends org.apache.commons.lang3.StringUtils {
 
     public static final String SEPARATOR = ",";
 
+    private static final AntPathMatcher ANT_PATH_MATCHER = new AntPathMatcher();
+
     /**
      * 获取参数不为空值
      *
@@ -28,6 +30,14 @@ public class StringUtils extends org.apache.commons.lang3.StringUtils {
      */
     public static String blankToDefault(String str, String defaultValue) {
         return isBlank(str) ? defaultValue : str;
+    }
+
+    public static String emptyToDefault(String str, String defaultValue) {
+        return isEmpty(str) ? defaultValue : str;
+    }
+
+    public static String nullToEmpty(String str) {
+        return str == null ? "" : str;
     }
 
     /**
@@ -111,6 +121,10 @@ public class StringUtils extends org.apache.commons.lang3.StringUtils {
      * @return 结果
      */
     public static boolean ishttp(String link) {
+        return isHttp(link);
+    }
+
+    public static boolean isHttp(String link) {
         if (isBlank(link)) {
             return false;
         }
@@ -294,8 +308,41 @@ public class StringUtils extends org.apache.commons.lang3.StringUtils {
      * @param url     需要匹配的url
      */
     public static boolean isMatch(String pattern, String url) {
-        AntPathMatcher matcher = new AntPathMatcher();
-        return matcher.match(pattern, url);
+        return ANT_PATH_MATCHER.match(pattern, url);
+    }
+
+    public static String truncate(String value, int maxLength) {
+        if (value == null || maxLength <= 0) {
+            return "";
+        }
+        if (value.length() <= maxLength) {
+            return value;
+        }
+        return value.substring(0, maxLength);
+    }
+
+    public static String joinNotBlank(Collection<String> values, String separator) {
+        if (values == null || values.isEmpty()) {
+            return "";
+        }
+        String actualSeparator = isEmpty(separator) ? SEPARATOR : separator;
+        return values.stream()
+            .filter(Objects::nonNull)
+            .map(String::trim)
+            .filter(StringUtils::isNotEmpty)
+            .collect(Collectors.joining(actualSeparator));
+    }
+
+    public static boolean equalsAnyIgnoreCase(String source, Collection<String> candidates) {
+        if (source == null || candidates == null || candidates.isEmpty()) {
+            return false;
+        }
+        for (String candidate : candidates) {
+            if (equalsIgnoreCase(source, candidate)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     /**

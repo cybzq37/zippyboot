@@ -17,19 +17,23 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
 import java.nio.file.attribute.FileTime;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
+import java.util.Set;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 
-public class ZipUtils {
+public final class ZipUtils {
 
     private static final Logger log = LoggerFactory.getLogger(ZipUtils.class);
 
@@ -37,15 +41,29 @@ public class ZipUtils {
     private static final String FILE_MATCH_MODE = "file";
     private static final Charset ZIP_CHARSET = Charset.forName("GBK");
 
+    private ZipUtils() {
+    }
+
     public static void unzip(File zipFile, String descDir) throws IOException {
-        try (ZipArchiveInputStream inputStream = getZipFile(zipFile)) {
+        unzip(zipFile, descDir, ZIP_CHARSET);
+    }
+
+    public static void unzip(File zipFile, String descDir, Charset charset) throws IOException {
+        try (ZipArchiveInputStream inputStream = getZipFile(zipFile, charset)) {
             unzip(descDir, inputStream);
         }
     }
 
+    public static void unzip(Path zipFile, Path descDir) throws IOException {
+        unzip(zipFile.toFile(), descDir.toString(), ZIP_CHARSET);
+    }
 
     public static void unzip(InputStream zipFile, String descDir) {
-        try (ZipArchiveInputStream inputStream = getZipFile(zipFile)) {
+        unzip(zipFile, descDir, ZIP_CHARSET);
+    }
+
+    public static void unzip(InputStream zipFile, String descDir, Charset charset) {
+        try (ZipArchiveInputStream inputStream = getZipFile(zipFile, charset)) {
             unzip(descDir, inputStream);
             log.info("******************解压完毕********************");
         } catch (Exception e) {
@@ -92,7 +110,7 @@ public class ZipUtils {
     public static String getFileList(String path, String fileLastFix, String name) {
         File file = new File(path);
 
-        if (!file.exists() || !file.isDirectory()) {
+        if (!file.exists() || !file.isDirectory() || fileLastFix == null) {
             return null;
         }
         String basePath = path.endsWith(File.separator) ? path : path + File.separator;
@@ -141,12 +159,14 @@ public class ZipUtils {
         return false;
     }
 
-    private static ZipArchiveInputStream getZipFile(File zipFile) throws IOException {
-        return new ZipArchiveInputStream(new BufferedInputStream(new FileInputStream(zipFile)), ZIP_CHARSET.name());
+    private static ZipArchiveInputStream getZipFile(File zipFile, Charset charset) throws IOException {
+        Charset actualCharset = charset == null ? ZIP_CHARSET : charset;
+        return new ZipArchiveInputStream(new BufferedInputStream(new FileInputStream(zipFile)), actualCharset.name());
     }
 
-    private static ZipArchiveInputStream getZipFile(InputStream zipFile) {
-        return new ZipArchiveInputStream(new BufferedInputStream(zipFile), ZIP_CHARSET.name());
+    private static ZipArchiveInputStream getZipFile(InputStream zipFile, Charset charset) {
+        Charset actualCharset = charset == null ? ZIP_CHARSET : charset;
+        return new ZipArchiveInputStream(new BufferedInputStream(zipFile), actualCharset.name());
     }
 
     /**
@@ -155,10 +175,15 @@ public class ZipUtils {
      * @param zipFilePath 压缩包路径
      */
     public static void zipFolder(String sourceFolderPath, String zipFilePath) {
+        zipFolder(sourceFolderPath, zipFilePath, ZIP_CHARSET);
+    }
+
+    public static void zipFolder(String sourceFolderPath, String zipFilePath, Charset charset) {
         try (FileOutputStream fos = new FileOutputStream(zipFilePath);
              ZipArchiveOutputStream zos = new ZipArchiveOutputStream(fos)) {
+            zos.setEncoding((charset == null ? ZIP_CHARSET : charset).name());
             File sourceFolder = new File(sourceFolderPath);
-            addFolderToZip(sourceFolder, null, zos);
+            addFolderToZip(sourceFolder, sourceFolder.getName(), zos);
             zos.flush();
         } catch (IOException e) {
             log.error("zip folder error, source={}, target={}", sourceFolderPath, zipFilePath, e);
@@ -174,29 +199,56 @@ public class ZipUtils {
         zipFolder(sourceFolderPath, zipFilePath);
     }
 
-    private static void addFolderToZip(File folder, String parentFolderName, ZipArchiveOutputStream zos) throws IOException {
-        File[] files;
-        if (folder.isFile()) {
-             files = new File[]{new File(folder.getPath())};
-        } else {
-            files = folder.listFiles();
+    public static void zipFiles(Collection<File> sourceFiles, String zipFilePath) {
+        if (sourceFiles == null || sourceFiles.isEmpty()) {
+            return;
         }
-        if (files == null || files.length == 0) {
+        try (FileOutputStream fos = new FileOutputStream(zipFilePath);
+             ZipArchiveOutputStream zos = new ZipArchiveOutputStream(fos)) {
+            zos.setEncoding(ZIP_CHARSET.name());
+            for (File sourceFile : sourceFiles) {
+                if (sourceFile == null || !sourceFile.exists()) {
+                    continue;
+                }
+                addFolderToZip(sourceFile, sourceFile.getName(), zos);
+            }
+            zos.flush();
+        } catch (IOException e) {
+            log.error("zip files error, target={}", zipFilePath, e);
+            throw new RuntimeException(e);
+        }
+    }
+
+    private static void addFolderToZip(File folder, String parentFolderName, ZipArchiveOutputStream zos) throws IOException {
+        if (folder == null || !folder.exists()) {
             return;
         }
 
+        if (folder.isFile()) {
+            addFileEntry(folder, parentFolderName, zos);
+            return;
+        }
+
+        File[] files = folder.listFiles();
+        if (files == null || files.length == 0) {
+            return;
+        }
         for (File file : files) {
-            String entryName = (isNotBlank(parentFolderName) ? parentFolderName + File.separator : "") + file.getName();
+            String entryName = (isNotBlank(parentFolderName) ? parentFolderName + "/" : "") + file.getName();
             if (file.isDirectory()) {
                 addFolderToZip(file, entryName, zos);
                 continue;
             }
-            try (FileInputStream fis = new FileInputStream(file)) {
-                ZipArchiveEntry zipEntry = new ZipArchiveEntry(entryName);
-                zos.putArchiveEntry(zipEntry);
-                IOUtils.copy(fis, zos);
-                zos.closeArchiveEntry();
-            }
+            addFileEntry(file, entryName, zos);
+        }
+    }
+
+    private static void addFileEntry(File file, String entryName, ZipArchiveOutputStream zos) throws IOException {
+        try (FileInputStream fis = new FileInputStream(file)) {
+            ZipArchiveEntry zipEntry = new ZipArchiveEntry(entryName.replace("\\", "/"));
+            zos.putArchiveEntry(zipEntry);
+            IOUtils.copy(fis, zos);
+            zos.closeArchiveEntry();
         }
     }
 
@@ -208,6 +260,10 @@ public class ZipUtils {
      * @return
      */
     public static List<String> checkZip(InputStream input) {
+        return checkZipExtensions(input);
+    }
+
+    public static List<String> checkZipExtensions(InputStream input) {
         if (input == null) {
             return Collections.emptyList();
         }
@@ -234,6 +290,27 @@ public class ZipUtils {
             log.error("check zip error", e);
         }
         return fileList;
+    }
+
+    public static List<String> listEntryNames(InputStream input) {
+        if (input == null) {
+            return Collections.emptyList();
+        }
+
+        Set<String> names = new LinkedHashSet<>();
+        try (ZipInputStream zipInputStream = new ZipInputStream(new BufferedInputStream(input), StandardCharsets.UTF_8)) {
+            ZipEntry zipFile;
+            while ((zipFile = zipInputStream.getNextEntry()) != null) {
+                String name = zipFile.getName();
+                if (name != null && !name.toLowerCase(Locale.ROOT).startsWith(MAC_OSX_PREFIX)) {
+                    names.add(name);
+                }
+                zipInputStream.closeEntry();
+            }
+        } catch (Exception e) {
+            log.error("list zip entry names error", e);
+        }
+        return new ArrayList<>(names);
     }
 
     private static boolean isNotBlank(String value) {

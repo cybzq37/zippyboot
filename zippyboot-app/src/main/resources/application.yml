@@ -71,3 +71,20 @@ zippyboot:
     satoken:
       login-type: login
       token-prefix: Bearer
+    storage:
+      # local | s3 | minio | seaweedfs | rustfs | aliyun_oss
+      type: local
+      public-base-url: ""
+      date-path-pattern: yyyy/MM/dd
+      # uuid | origin
+      filename-strategy: uuid
+      local:
+        root-path: ./uploads
+        access-path-prefix: /uploads
+      object:
+        bucket: zippyboot
+        endpoint: ""
+        region: ""
+        access-key: ""
+        secret-key: ""
+        domain: ""

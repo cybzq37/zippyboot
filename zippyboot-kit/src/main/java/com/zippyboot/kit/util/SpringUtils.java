@@ -6,7 +6,12 @@ import org.springframework.beans.factory.ListableBeanFactory;
 import org.springframework.beans.factory.NoSuchBeanDefinitionException;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.ApplicationContextAware;
+import org.springframework.context.ApplicationEvent;
 import org.springframework.stereotype.Component;
+
+import java.util.Collections;
+import java.util.Map;
+import java.util.Optional;
 
 /**
  * spring工具类
@@ -16,7 +21,7 @@ import org.springframework.stereotype.Component;
 @Component
 public class SpringUtils implements ApplicationContextAware {
 
-    private static ApplicationContext applicationContext;
+    private static volatile ApplicationContext applicationContext;
 
     @Override
     public void setApplicationContext(ApplicationContext applicationContext) throws BeansException {
@@ -34,6 +39,10 @@ public class SpringUtils implements ApplicationContextAware {
         return applicationContext;
     }
 
+    public static boolean isContextReady() {
+        return applicationContext != null;
+    }
+
     public static <T> T getBean(Class<T> clazz) {
         return getBeanFactory().getBean(clazz);
     }
@@ -44,6 +53,35 @@ public class SpringUtils implements ApplicationContextAware {
 
     public static Object getBean(String name) {
         return getBeanFactory().getBean(name);
+    }
+
+    public static <T> Optional<T> getBeanIfPresent(Class<T> clazz) {
+        if (!isContextReady()) {
+            return Optional.empty();
+        }
+        try {
+            return Optional.of(getBean(clazz));
+        } catch (BeansException ex) {
+            return Optional.empty();
+        }
+    }
+
+    public static <T> Optional<T> getBeanIfPresent(String name, Class<T> clazz) {
+        if (!isContextReady()) {
+            return Optional.empty();
+        }
+        try {
+            return Optional.of(getBean(name, clazz));
+        } catch (BeansException ex) {
+            return Optional.empty();
+        }
+    }
+
+    public static <T> Map<String, T> getBeansOfType(Class<T> clazz) {
+        if (!isContextReady()) {
+            return Collections.emptyMap();
+        }
+        return getBeanFactory().getBeansOfType(clazz);
     }
 
     /**
@@ -82,6 +120,44 @@ public class SpringUtils implements ApplicationContextAware {
      */
     public static String[] getAliases(String name) throws NoSuchBeanDefinitionException {
         return getBeanFactory().getAliases(name);
+    }
+
+    public static String getProperty(String key) {
+        if (!isContextReady()) {
+            return null;
+        }
+        return applicationContext.getEnvironment().getProperty(key);
+    }
+
+    public static String getProperty(String key, String defaultValue) {
+        String value = getProperty(key);
+        return value == null ? defaultValue : value;
+    }
+
+    public static boolean isActiveProfile(String profile) {
+        if (!isContextReady() || profile == null || profile.isBlank()) {
+            return false;
+        }
+        for (String activeProfile : applicationContext.getEnvironment().getActiveProfiles()) {
+            if (profile.equalsIgnoreCase(activeProfile)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    public static void publishEvent(ApplicationEvent event) {
+        if (event == null) {
+            return;
+        }
+        getApplicationContext().publishEvent(event);
+    }
+
+    public static void publishEvent(Object event) {
+        if (event == null) {
+            return;
+        }
+        getApplicationContext().publishEvent(event);
     }
 
     /**
