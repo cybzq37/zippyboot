@@ -59,3 +59,29 @@ After startup:
 
 
 还缺少定时任务模块
+
+
+整体以zippy为代号，
+zippyboot
+zippyframe
+zippykit
+zippycore
+zippystack
+zippyhub
+zippystarter
+zippylanucher
+zippygenesis
+zippynexus
+
+zippy-api
+zippy-model
+zippy-kit
+zippy-infra
+zippy-app
+
+
+zippyboot-api
+zippyboot-model
+zippyboot-kit
+zippyboot-infra
+zippyboot-app
