@@ -7,6 +7,9 @@ RUN rm -f /etc/localtime \
 && ln -sv /usr/share/zoneinfo/Asia/Shanghai /etc/localtime \
 && echo "Asia/Shanghai" > /etc/timezone
 
+ENV ZIPPYBOOT_ID_WORKER_ID=2
+ENV ZIPPYBOOT_ID_DATACENTER_ID=1
+
 COPY zippyboot-netty-*.jar /zippyboot-netty.jar
 COPY bootstrap.yml /bootstrap.yml
 COPY start.sh /start.sh
