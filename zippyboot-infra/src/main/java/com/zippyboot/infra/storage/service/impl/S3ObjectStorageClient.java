@@ -85,7 +85,7 @@ public class S3ObjectStorageClient implements ObjectStorageClient {
             regionName = "us-east-1";
         }
 
-        S3Client.Builder builder = S3Client.builder()
+        var builder = S3Client.builder()
                 .region(Region.of(regionName))
                 .credentialsProvider(StaticCredentialsProvider.create(AwsBasicCredentials.create(accessKey, secretKey)));
 

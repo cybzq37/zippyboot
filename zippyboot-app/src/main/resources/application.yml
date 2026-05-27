@@ -52,19 +52,12 @@ springdoc:
 
 zippyboot:
   infra:
-    redis:
-      key-prefix: "zippy:"
-      default-ttl-seconds: 3600
     kafka:
       default-topic: zippyboot-topic
       consumer-group: zippyboot-group
     mybatis:
       map-underscore-to-camel-case: true
       print-sql: true
-    es:
-      index-prefix: zippy_
-      shards: 1
-      replicas: 0
     geotools:
       default-source-epsg: EPSG:4326
       default-target-epsg: EPSG:3857

@@ -9,6 +9,7 @@ import lombok.Data;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.data.redis.core.RedisTemplate;
 
@@ -39,6 +40,7 @@ public class SaTokenConfig {
      * 自定义dao层存储
      */
     @Bean
+    @ConditionalOnBean(RedisTemplate.class)
     @ConditionalOnMissingBean(SaTokenDao.class)
     public SaTokenDao saTokenDao(RedisTemplate<String, Object> redisTemplate) {
         return new PlusSaTokenDao(redisTemplate);

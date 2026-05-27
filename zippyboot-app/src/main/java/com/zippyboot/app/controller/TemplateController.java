@@ -2,9 +2,9 @@ package com.zippyboot.app.controller;
 
 import cn.dev33.satoken.stp.StpUtil;
 import com.zippyboot.api.dto.HealthDto;
-import com.zippyboot.infra.es.service.ElasticsearchService;
+import com.zippyboot.infra.es.ElasticsearchTemplate;
 import com.zippyboot.infra.kafka.service.KafkaService;
-import com.zippyboot.infra.redis.service.RedisService;
+import com.zippyboot.infra.redis.RedisTemplate;
 import com.zippyboot.infra.satoken.service.SaTokenService;
 import com.zippyboot.model.ApiResponse;
 import lombok.RequiredArgsConstructor;
@@ -22,9 +22,9 @@ import java.util.Map;
 @RequestMapping("/api/v1/template")
 public class TemplateController {
 
-    private final ObjectProvider<RedisService> redisService;
+    private final ObjectProvider<RedisTemplate> redisService;
     private final ObjectProvider<KafkaService> kafkaService;
-    private final ObjectProvider<ElasticsearchService> elasticsearchService;
+    private final ObjectProvider<ElasticsearchTemplate> elasticsearchService;
     private final ObjectProvider<SaTokenService> saTokenService;
 
     @GetMapping("/ping")
