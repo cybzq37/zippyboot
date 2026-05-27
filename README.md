@@ -85,3 +85,8 @@ zippyboot-model
 zippyboot-kit
 zippyboot-infra
 zippyboot-app
+
+
+
+
+- 现在很多方法仍然直接 throws Exception，后面如果被 controller/service 直接调用，异常边界会比较粗。
