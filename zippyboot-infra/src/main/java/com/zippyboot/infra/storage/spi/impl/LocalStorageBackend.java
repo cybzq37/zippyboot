@@ -28,6 +28,8 @@ import java.util.Collection;
 
 public class LocalStorageBackend implements StorageBackend {
 
+    private static final int MAX_SUFFIX_RETRIES = 1000;
+
     private final StorageProperties properties;
     private final Path rootPath;
 
@@ -58,7 +60,12 @@ public class LocalStorageBackend implements StorageBackend {
         String normalizedKey = StorageObjectKeyGenerator.requireValidKey(key, "key");
         Path targetPath = resolvePath(normalizedKey);
         StoredObjectMetadata metadata = getMetadata(normalizedKey);
-        InputStream inputStream = Files.newInputStream(targetPath);
+        InputStream inputStream;
+        try {
+            inputStream = Files.newInputStream(targetPath);
+        } catch (IOException exception) {
+            throw new StorageBackendException("Failed to open object from local storage: " + normalizedKey, exception);
+        }
         return new StoredObject(normalizedKey, metadata.contentType(), metadata.size(), inputStream);
     }
 
@@ -68,6 +75,9 @@ public class LocalStorageBackend implements StorageBackend {
         Path targetPath = resolvePath(normalizedKey);
         requireRegularFile(targetPath, normalizedKey);
         String contentType = Files.probeContentType(targetPath);
+        if (!StringUtils.hasText(contentType)) {
+            contentType = "application/octet-stream";
+        }
         long size = Files.size(targetPath);
         return new StoredObjectMetadata(normalizedKey, contentType, size, buildAccessUrl(normalizedKey));
     }
@@ -154,15 +164,16 @@ public class LocalStorageBackend implements StorageBackend {
         String normalizedKey = StorageObjectKeyGenerator.requireValidKey(key, "key");
         Path targetPath = resolvePath(normalizedKey);
         if (Files.notExists(targetPath)) {
-            return;
+            throw new StorageObjectNotFoundException("Storage object not found: " + normalizedKey);
         }
         requireRegularFile(targetPath, normalizedKey);
         Files.deleteIfExists(targetPath);
+        cleanupEmptyParentDirectories(targetPath.getParent());
     }
 
     private String buildAccessUrl(String key) {
         String encodedKey = StorageObjectKeyGenerator.encodeUrlPath(key);
-        String publicBaseUrl = stripTrailingSlash(properties.getPublicBaseUrl());
+        String publicBaseUrl = StorageObjectKeyGenerator.stripTrailingSlash(properties.getPublicBaseUrl());
         if (StringUtils.hasText(publicBaseUrl)) {
             return publicBaseUrl + "/" + encodedKey;
         }
@@ -172,19 +183,8 @@ public class LocalStorageBackend implements StorageBackend {
         if (!normalizedPrefix.startsWith("/")) {
             normalizedPrefix = "/" + normalizedPrefix;
         }
-        normalizedPrefix = stripTrailingSlash(normalizedPrefix);
+        normalizedPrefix = StorageObjectKeyGenerator.stripTrailingSlash(normalizedPrefix);
         return normalizedPrefix + "/" + encodedKey;
-    }
-
-    private String stripTrailingSlash(String value) {
-        if (!StringUtils.hasText(value)) {
-            return value;
-        }
-        String normalized = value.trim();
-        while (normalized.endsWith("/")) {
-            normalized = normalized.substring(0, normalized.length() - 1);
-        }
-        return normalized;
     }
 
     private Path resolvePath(String key) throws IOException {
@@ -214,6 +214,7 @@ public class LocalStorageBackend implements StorageBackend {
         createParentDirectories(targetPath);
         try (InputStream inputStream = request.openStream()) {
             Files.copy(inputStream, targetPath, StandardCopyOption.REPLACE_EXISTING);
+            validateWrittenSize(targetPath, request.getSize(), normalizedKey);
             return buildUploadedFileInfo(normalizedKey, targetPath, request);
         } catch (IOException exception) {
             throw new StorageBackendException("Failed to upload object to local storage: " + normalizedKey, exception);
@@ -226,6 +227,7 @@ public class LocalStorageBackend implements StorageBackend {
         createParentDirectories(targetPath);
         try (InputStream inputStream = request.openStream()) {
             Files.copy(inputStream, targetPath);
+            validateWrittenSize(targetPath, request.getSize(), normalizedKey);
             return buildUploadedFileInfo(normalizedKey, targetPath, request);
         } catch (FileAlreadyExistsException exception) {
             throw new StorageConflictException("Storage object already exists: " + normalizedKey, exception);
@@ -235,8 +237,7 @@ public class LocalStorageBackend implements StorageBackend {
     }
 
     private UploadedFileInfo writeAppendSuffix(String normalizedKey, FileUploadRequest request) throws IOException {
-        int suffix = 0;
-        while (true) {
+        for (int suffix = 0; suffix < MAX_SUFFIX_RETRIES; suffix++) {
             String candidateKey = suffix == 0
                     ? normalizedKey
                     : StorageObjectKeyGenerator.appendNumericSuffix(normalizedKey, suffix);
@@ -247,13 +248,15 @@ public class LocalStorageBackend implements StorageBackend {
                 try (var outputStream = Files.newOutputStream(candidatePath, StandardOpenOption.CREATE_NEW, StandardOpenOption.WRITE)) {
                     inputStream.transferTo(outputStream);
                 }
+                validateWrittenSize(candidatePath, request.getSize(), candidateKey);
                 return buildUploadedFileInfo(candidateKey, candidatePath, request);
             } catch (FileAlreadyExistsException exception) {
-                suffix++;
+                // try next suffix
             } catch (IOException exception) {
                 throw new StorageBackendException("Failed to upload object to local storage: " + candidateKey, exception);
             }
         }
+        throw new StorageBackendException("Failed to find available key after " + MAX_SUFFIX_RETRIES + " attempts: " + normalizedKey);
     }
 
     private UploadedFileInfo buildUploadedFileInfo(String key, Path targetPath, FileUploadRequest request) {
@@ -283,5 +286,41 @@ public class LocalStorageBackend implements StorageBackend {
 
     private StorageConflictStrategy resolveConflictStrategy(StorageConflictStrategy conflictStrategy) {
         return conflictStrategy == null ? StorageConflictStrategy.APPEND_SUFFIX : conflictStrategy;
+    }
+
+    private void validateWrittenSize(Path targetPath, long expectedSize, String key) throws IOException {
+        if (expectedSize <= 0) {
+            return;
+        }
+        long actualSize = Files.size(targetPath);
+        if (actualSize != expectedSize) {
+            Files.deleteIfExists(targetPath);
+            throw new StorageBackendException("Upload size mismatch for key " + key
+                    + ": expected=" + expectedSize + ", actual=" + actualSize);
+        }
+    }
+
+    private void cleanupEmptyParentDirectories(Path directory) {
+        if (directory == null) {
+            return;
+        }
+        Path current = directory.toAbsolutePath().normalize();
+        Path root = rootPath.toAbsolutePath().normalize();
+        while (current != null && !current.equals(root) && current.startsWith(root)) {
+            try {
+                boolean isEmpty;
+                try (var stream = Files.list(current)) {
+                    isEmpty = stream.findAny().isEmpty();
+                }
+                if (Files.isDirectory(current) && isEmpty) {
+                    Files.delete(current);
+                    current = current.getParent();
+                } else {
+                    break;
+                }
+            } catch (IOException exception) {
+                break;
+            }
+        }
     }
 }

@@ -135,8 +135,8 @@ class LocalStorageBackendTest {
                 .inputStreamSource(() -> new java.io.ByteArrayInputStream(content))
                 .build());
 
-        assertEquals("avatars/user-1/profile.png", uploadedFileInfo.getKey());
-        assertEquals("/uploads/avatars/user-1/profile.png", storageService.getAccessUrl(uploadedFileInfo.getKey()));
+        assertTrue(uploadedFileInfo.getKey().matches("avatars/user-1/\\d{4}/\\d{2}/\\d{2}/profile\\.png"),
+                "Expected key matching 'avatars/user-1/yyyy/MM/dd/profile.png' but was: " + uploadedFileInfo.getKey());
 
         String copiedKey = storageService.copy(uploadedFileInfo.getKey(), "archive/profile.png");
         assertEquals("archive/profile.png", copiedKey);

@@ -34,7 +34,9 @@ class StorageObjectKeyGeneratorTest {
     void shouldGenerateStoredFilenameUnderPrefix() {
         StorageObjectKeyGenerator generator = new StorageObjectKeyGenerator("yyyy/MM/dd", StorageFilenameStrategy.ORIGINAL);
 
-        assertEquals("avatars/user-1/profile.png", generator.generateUnderPrefix("avatars/user-1", "profile.png"));
+        String key = generator.generateUnderPrefix("avatars/user-1", "profile.png");
+        assertTrue(key.matches("avatars/user-1/\\d{4}/\\d{2}/\\d{2}/profile\\.png"),
+                "Expected key matching 'avatars/user-1/yyyy/MM/dd/profile.png' but was: " + key);
     }
 
     @Test

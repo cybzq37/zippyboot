@@ -4,6 +4,7 @@ import lombok.Builder;
 import lombok.Value;
 import org.springframework.core.io.InputStreamSource;
 import org.springframework.util.Assert;
+import org.springframework.util.StringUtils;
 
 import java.io.InputStream;
 import java.io.IOException;
@@ -19,6 +20,9 @@ public class FileUploadRequest {
 
     public void validate() {
         Assert.notNull(inputStreamSource, "inputStreamSource must not be null");
+        if (!StringUtils.hasText(originalFilename)) {
+            throw new IllegalArgumentException("originalFilename must not be blank");
+        }
         if (size < 0) {
             throw new IllegalArgumentException("size must not be negative");
         }

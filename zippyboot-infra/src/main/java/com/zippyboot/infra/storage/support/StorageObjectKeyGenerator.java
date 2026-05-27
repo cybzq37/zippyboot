@@ -33,7 +33,8 @@ public final class StorageObjectKeyGenerator {
     }
 
     public String generateUnderPrefix(String prefix, String originalFilename) {
-        return joinPath(prefix, buildStoredFilename(originalFilename));
+        String datePath = LocalDate.now().format(datePathFormatter);
+        return joinPath(prefix, datePath, buildStoredFilename(originalFilename));
     }
 
     public String buildStoredFilename(String originalFilename) {
@@ -183,10 +184,28 @@ public final class StorageObjectKeyGenerator {
     }
 
     private static void validateSegments(String normalized, String fieldName) {
-        for (String segment : normalized.split("/")) {
-            if (!StringUtils.hasText(segment) || ".".equals(segment) || "..".equals(segment)) {
+        int start = 0;
+        while (start <= normalized.length()) {
+            int end = normalized.indexOf('/', start);
+            if (end < 0) {
+                end = normalized.length();
+            }
+            String segment = normalized.substring(start, end);
+            if (segment.isEmpty() || ".".equals(segment) || "..".equals(segment)) {
                 throw new StorageInvalidKeyException(fieldName + " contains invalid path segment: " + normalized);
             }
+            start = end + 1;
         }
+    }
+
+    public static String stripTrailingSlash(String value) {
+        if (!StringUtils.hasText(value)) {
+            return value;
+        }
+        String normalized = value.trim();
+        while (normalized.endsWith("/")) {
+            normalized = normalized.substring(0, normalized.length() - 1);
+        }
+        return normalized;
     }
 }

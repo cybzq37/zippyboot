@@ -68,7 +68,9 @@ public class StorageAutoConfiguration {
         if (existingClient != null) {
             return new S3StorageBackend(properties, existingClient, false);
         }
-        throw new IllegalStateException("No storageS3Client bean available for S3 storage backend");
+        throw new IllegalStateException("No storageS3Client bean available for S3 storage backend. "
+                + "Configure S3 credentials via zippyboot.infra.storage.s3.access-key/secret-key, "
+                + "or provide a custom S3Client bean named 'storageS3Client'.");
     }
 
     @Bean("storageS3Client")

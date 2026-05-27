@@ -19,8 +19,9 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Iterator;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
 public class DefaultStorageService implements StorageService {
 
@@ -74,11 +75,10 @@ public class DefaultStorageService implements StorageService {
 
     @Override
     public byte[] readBytes(String key) throws IOException {
-        StoredObjectMetadata metadata = getMetadata(key);
-        if (metadata.size() > maxInMemoryReadBytes) {
-            throw new IOException("Stored object is too large to read into memory: " + metadata.key());
-        }
         try (StoredObject storedObject = open(key)) {
+            if (storedObject.size() > maxInMemoryReadBytes) {
+                throw new IOException("Stored object is too large to read into memory: " + storedObject.key());
+            }
             return readBytesWithLimit(storedObject);
         }
     }
@@ -124,61 +124,66 @@ public class DefaultStorageService implements StorageService {
     public BatchDeleteResult deleteBatch(Collection<String> keys) {
         Assert.notNull(keys, "keys must not be null");
         List<String> requestedKeys = new ArrayList<>(keys);
-        List<String> normalizedKeys = new ArrayList<>(requestedKeys.size());
-        List<String> validationErrors = new ArrayList<>(requestedKeys.size());
+
+        List<String> validKeys = new ArrayList<>(requestedKeys.size());
+        Map<String, String> validationErrors = new LinkedHashMap<>();
         for (String key : requestedKeys) {
             try {
-                normalizedKeys.add(StorageObjectKeyGenerator.requireValidKey(key, "key"));
-                validationErrors.add(null);
+                validKeys.add(StorageObjectKeyGenerator.requireValidKey(key, "key"));
             } catch (IllegalArgumentException exception) {
-                validationErrors.add(exception.getMessage());
+                validationErrors.put(key, exception.getMessage());
             }
         }
 
-        List<BatchDeleteItemResult> backendItems = List.of();
-        if (!normalizedKeys.isEmpty()) {
-            BatchDeleteResult backendResult = backend.deleteBatch(normalizedKeys);
-            backendItems = backendResult.getItems() == null ? List.of() : backendResult.getItems();
+        Map<String, BatchDeleteItemResult> backendResultsByKey = new LinkedHashMap<>();
+        if (!validKeys.isEmpty()) {
+            BatchDeleteResult backendResult = backend.deleteBatch(validKeys);
+            List<BatchDeleteItemResult> backendItems = backendResult.getItems() == null ? List.of() : backendResult.getItems();
+            for (BatchDeleteItemResult item : backendItems) {
+                backendResultsByKey.put(item.getRequestedKey(), item);
+            }
         }
 
         BatchDeleteResult.BatchDeleteResultBuilder builder = BatchDeleteResult.builder()
                 .requestedCount(requestedKeys.size());
-        Iterator<BatchDeleteItemResult> backendIterator = backendItems.iterator();
         int successCount = 0;
         int failureCount = 0;
-        for (int index = 0; index < requestedKeys.size(); index++) {
-            String requestedKey = requestedKeys.get(index);
-            BatchDeleteItemResult item;
-            String validationError = validationErrors.get(index);
+        int validIndex = 0;
+        for (String requestedKey : requestedKeys) {
+            String validationError = validationErrors.get(requestedKey);
             if (validationError != null) {
-                item = BatchDeleteItemResult.builder()
-                        .requestedKey(String.valueOf(requestedKey))
+                builder.item(BatchDeleteItemResult.builder()
+                        .requestedKey(requestedKey)
                         .resolvedKey(null)
                         .success(false)
                         .message(validationError)
-                        .build();
-            } else if (backendIterator.hasNext()) {
-                BatchDeleteItemResult backendItem = backendIterator.next();
-                item = BatchDeleteItemResult.builder()
-                        .requestedKey(requestedKey)
-                        .resolvedKey(backendItem.getResolvedKey())
-                        .success(backendItem.isSuccess())
-                        .message(backendItem.getMessage())
-                        .build();
-            } else {
-                String resolvedKey = StorageObjectKeyGenerator.requireValidKey(requestedKey, "key");
-                item = BatchDeleteItemResult.builder()
-                        .requestedKey(requestedKey)
-                        .resolvedKey(resolvedKey)
-                        .success(false)
-                        .message("Unknown delete result")
-                        .build();
-            }
-            builder.item(item);
-            if (item.isSuccess()) {
-                successCount++;
-            } else {
+                        .build());
                 failureCount++;
+            } else {
+                String normalizedKey = validKeys.get(validIndex);
+                validIndex++;
+                BatchDeleteItemResult backendItem = backendResultsByKey.get(normalizedKey);
+                if (backendItem != null) {
+                    builder.item(BatchDeleteItemResult.builder()
+                            .requestedKey(requestedKey)
+                            .resolvedKey(backendItem.getResolvedKey())
+                            .success(backendItem.isSuccess())
+                            .message(backendItem.getMessage())
+                            .build());
+                    if (backendItem.isSuccess()) {
+                        successCount++;
+                    } else {
+                        failureCount++;
+                    }
+                } else {
+                    builder.item(BatchDeleteItemResult.builder()
+                            .requestedKey(requestedKey)
+                            .resolvedKey(normalizedKey)
+                            .success(false)
+                            .message("Unknown delete result")
+                            .build());
+                    failureCount++;
+                }
             }
         }
         return builder.successCount(successCount)
@@ -188,8 +193,8 @@ public class DefaultStorageService implements StorageService {
 
     @Override
     public String copy(String sourceKey, String targetKey) throws IOException {
-        String normalizedSourceKey = requireKey(sourceKey, "sourceKey");
-        String normalizedTargetKey = requireKey(targetKey, "targetKey");
+        String normalizedSourceKey = StorageObjectKeyGenerator.requireValidKey(sourceKey, "sourceKey");
+        String normalizedTargetKey = StorageObjectKeyGenerator.requireValidKey(targetKey, "targetKey");
         if (normalizedSourceKey.equals(normalizedTargetKey)) {
             throw new IllegalArgumentException("sourceKey and targetKey must not resolve to the same key");
         }
@@ -199,8 +204,8 @@ public class DefaultStorageService implements StorageService {
 
     @Override
     public String move(String sourceKey, String targetKey) throws IOException {
-        String normalizedSourceKey = requireKey(sourceKey, "sourceKey");
-        String normalizedTargetKey = requireKey(targetKey, "targetKey");
+        String normalizedSourceKey = StorageObjectKeyGenerator.requireValidKey(sourceKey, "sourceKey");
+        String normalizedTargetKey = StorageObjectKeyGenerator.requireValidKey(targetKey, "targetKey");
         if (normalizedSourceKey.equals(normalizedTargetKey)) {
             return normalizedSourceKey;
         }
@@ -228,7 +233,5 @@ public class DefaultStorageService implements StorageService {
         return outputStream.toByteArray();
     }
 
-    private String requireKey(String key, String fieldName) {
-        return StorageObjectKeyGenerator.requireValidKey(key, fieldName);
-    }
+
 }

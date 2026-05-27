@@ -21,7 +21,6 @@ import software.amazon.awssdk.core.sync.RequestBody;
 import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.model.CopyObjectRequest;
 import software.amazon.awssdk.services.s3.model.Delete;
-import software.amazon.awssdk.services.s3.model.DeleteObjectResponse;
 import software.amazon.awssdk.services.s3.model.DeletedObject;
 import software.amazon.awssdk.services.s3.model.DeleteObjectsRequest;
 import software.amazon.awssdk.services.s3.model.DeleteObjectsResponse;
@@ -32,22 +31,36 @@ import software.amazon.awssdk.services.s3.model.HeadObjectResponse;
 import software.amazon.awssdk.services.s3.model.DeleteObjectRequest;
 import software.amazon.awssdk.services.s3.model.ObjectIdentifier;
 import software.amazon.awssdk.services.s3.model.PutObjectRequest;
-import software.amazon.awssdk.services.s3.model.PutObjectResponse;
 import software.amazon.awssdk.services.s3.model.S3Error;
 import software.amazon.awssdk.services.s3.model.S3Exception;
+import software.amazon.awssdk.services.s3.model.CompletedMultipartUpload;
+import software.amazon.awssdk.services.s3.model.CompletedPart;
+import software.amazon.awssdk.services.s3.model.CreateMultipartUploadRequest;
+import software.amazon.awssdk.services.s3.model.CreateMultipartUploadResponse;
+import software.amazon.awssdk.services.s3.model.AbortMultipartUploadRequest;
+import software.amazon.awssdk.services.s3.model.UploadPartRequest;
+import software.amazon.awssdk.services.s3.model.UploadPartResponse;
+import software.amazon.awssdk.services.s3.model.CompleteMultipartUploadRequest;
 
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.util.ArrayDeque;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 
 public class S3StorageBackend implements StorageBackend, AutoCloseable {
+
+    private static final int MAX_SUFFIX_RETRIES = 1000;
+    private static final long MULTIPART_THRESHOLD = 100 * 1024 * 1024L;
+    private static final long PART_SIZE = 8 * 1024 * 1024L;
 
     private final StorageProperties properties;
     private final StorageProperties.S3Properties s3Properties;
@@ -59,7 +72,6 @@ public class S3StorageBackend implements StorageBackend, AutoCloseable {
         this.s3Properties = properties.getS3();
         this.s3Client = Objects.requireNonNull(s3Client, "s3Client must not be null");
         this.closeClient = closeClient;
-        validate();
     }
 
     @Override
@@ -84,7 +96,8 @@ public class S3StorageBackend implements StorageBackend, AutoCloseable {
                     .build());
             GetObjectResponse response = inputStream.response();
             long size = response.contentLength() == null ? -1L : response.contentLength();
-            return new StoredObject(normalizedKey, response.contentType(), size, inputStream);
+            String contentType = StringUtils.hasText(response.contentType()) ? response.contentType() : "application/octet-stream";
+            return new StoredObject(normalizedKey, contentType, size, inputStream);
         } catch (S3Exception exception) {
             if (exception.statusCode() == 404 || exception.statusCode() == 403) {
                 throw new StorageObjectNotFoundException("Storage object not found: " + normalizedKey, exception);
@@ -104,7 +117,8 @@ public class S3StorageBackend implements StorageBackend, AutoCloseable {
                     .key(normalizedKey)
                     .build());
             long size = response.contentLength() == null ? -1L : response.contentLength();
-            return new StoredObjectMetadata(normalizedKey, response.contentType(), size, buildAccessUrl(normalizedKey));
+            String contentType = StringUtils.hasText(response.contentType()) ? response.contentType() : "application/octet-stream";
+            return new StoredObjectMetadata(normalizedKey, contentType, size, buildAccessUrl(normalizedKey));
         } catch (S3Exception exception) {
             if (exception.statusCode() == 404 || exception.statusCode() == 403) {
                 throw new StorageObjectNotFoundException("Storage object not found: " + normalizedKey, exception);
@@ -162,7 +176,6 @@ public class S3StorageBackend implements StorageBackend, AutoCloseable {
         try {
             delete(normalizedSourceKey);
         } catch (StorageObjectNotFoundException deleteException) {
-            deleteQuietly(normalizedTargetKey, deleteException);
             throw deleteException;
         } catch (IOException deleteException) {
             try {
@@ -194,9 +207,13 @@ public class S3StorageBackend implements StorageBackend, AutoCloseable {
         List<String> normalizedKeys = keys.stream()
                 .map(key -> StorageObjectKeyGenerator.requireValidKey(key, "key"))
                 .toList();
-        List<ObjectIdentifier> identifiers = normalizedKeys.stream()
+
+        List<String> uniqueKeys = normalizedKeys.stream().distinct().toList();
+        List<ObjectIdentifier> identifiers = uniqueKeys.stream()
                 .map(key -> ObjectIdentifier.builder().key(key).build())
                 .toList();
+
+        Map<String, BatchDeleteItemResult> resultByKey = new HashMap<>();
         try {
             DeleteObjectsResponse response = s3Client.deleteObjects(DeleteObjectsRequest.builder()
                     .bucket(s3Properties.getBucket())
@@ -204,81 +221,76 @@ public class S3StorageBackend implements StorageBackend, AutoCloseable {
                     .build());
             List<DeletedObject> deletedObjects = response.deleted() == null ? List.of() : response.deleted();
             List<S3Error> errors = response.errors() == null ? List.of() : response.errors();
-            Map<String, Integer> successCounts = new HashMap<>();
+
+            Set<String> deletedKeys = new HashSet<>();
             for (DeletedObject deleted : deletedObjects) {
-                successCounts.merge(deleted.key(), 1, Integer::sum);
+                deletedKeys.add(deleted.key());
             }
-            Map<String, ArrayDeque<String>> errorMessages = new HashMap<>();
+            Map<String, String> errorByKey = new HashMap<>();
             for (S3Error error : errors) {
-                errorMessages.computeIfAbsent(error.key(), ignored -> new ArrayDeque<>()).add(error.message());
+                errorByKey.putIfAbsent(error.key(), error.message());
             }
-            int successCount = 0;
-            int failureCount = 0;
-            for (String key : normalizedKeys) {
-                ArrayDeque<String> messages = errorMessages.get(key);
-                Integer remainingSuccess = successCounts.getOrDefault(key, 0);
-                if (messages != null && !messages.isEmpty()) {
-                    builder.item(BatchDeleteItemResult.builder()
+
+            for (String key : uniqueKeys) {
+                String errorMessage = errorByKey.get(key);
+                if (errorMessage != null) {
+                    resultByKey.put(key, BatchDeleteItemResult.builder()
                             .requestedKey(key)
                             .resolvedKey(key)
                             .success(false)
-                            .message(messages.removeFirst())
+                            .message(errorMessage)
                             .build());
-                    failureCount++;
-                    continue;
-                }
-                if (remainingSuccess > 0) {
-                    successCounts.put(key, remainingSuccess - 1);
-                    builder.item(BatchDeleteItemResult.builder()
+                } else if (deletedKeys.contains(key)) {
+                    resultByKey.put(key, BatchDeleteItemResult.builder()
                             .requestedKey(key)
                             .resolvedKey(key)
                             .success(true)
-                            .message(null)
                             .build());
-                    successCount++;
-                    continue;
+                } else {
+                    resultByKey.put(key, BatchDeleteItemResult.builder()
+                            .requestedKey(key)
+                            .resolvedKey(key)
+                            .success(false)
+                            .message("Unknown delete result")
+                            .build());
                 }
-                builder.item(BatchDeleteItemResult.builder()
-                        .requestedKey(key)
-                        .resolvedKey(key)
-                        .success(false)
-                        .message("Unknown delete result")
-                        .build());
-                failureCount++;
             }
-            builder.successCount(successCount);
-            builder.failureCount(failureCount);
-            return builder.build();
         } catch (SdkException exception) {
-            int failureCount = 0;
-            for (String key : normalizedKeys) {
-                builder.item(BatchDeleteItemResult.builder()
+            for (String key : uniqueKeys) {
+                resultByKey.put(key, BatchDeleteItemResult.builder()
                         .requestedKey(key)
                         .resolvedKey(key)
                         .success(false)
                         .message(exception.getMessage())
                         .build());
+            }
+        }
+
+        int successCount = 0;
+        int failureCount = 0;
+        for (String key : normalizedKeys) {
+            BatchDeleteItemResult item = resultByKey.get(key);
+            builder.item(item);
+            if (item.isSuccess()) {
+                successCount++;
+            } else {
                 failureCount++;
             }
-            builder.successCount(0);
-            builder.failureCount(failureCount);
-            return builder.build();
         }
+        return builder.successCount(successCount)
+                .failureCount(failureCount)
+                .build();
     }
 
     @Override
     public void delete(String key) throws IOException {
         String normalizedKey = StorageObjectKeyGenerator.requireValidKey(key, "key");
         try {
+            // S3 deleteObject is idempotent — succeeds even if the key does not exist.
             s3Client.deleteObject(DeleteObjectRequest.builder()
                     .bucket(s3Properties.getBucket())
                     .key(normalizedKey)
                     .build());
-        } catch (S3Exception exception) {
-            if (exception.statusCode() == 404 || exception.statusCode() == 403) {
-                throw new StorageObjectNotFoundException("Storage object not found: " + normalizedKey, exception);
-            }
-            throw new StorageBackendException("Failed to delete object from S3: " + normalizedKey, exception);
         } catch (SdkException exception) {
             throw new StorageBackendException("Failed to delete object from S3: " + normalizedKey, exception);
         }
@@ -293,17 +305,17 @@ public class S3StorageBackend implements StorageBackend, AutoCloseable {
 
     private String buildAccessUrl(String key) {
         String encodedKey = StorageObjectKeyGenerator.encodeUrlPath(key);
-        String publicBaseUrl = stripTrailingSlash(properties.getPublicBaseUrl());
+        String publicBaseUrl = StorageObjectKeyGenerator.stripTrailingSlash(properties.getPublicBaseUrl());
         if (StringUtils.hasText(publicBaseUrl)) {
             return publicBaseUrl + "/" + encodedKey;
         }
 
-        String domain = stripTrailingSlash(s3Properties.getDomain());
+        String domain = StorageObjectKeyGenerator.stripTrailingSlash(s3Properties.getDomain());
         if (StringUtils.hasText(domain)) {
             return domain + "/" + encodedKey;
         }
 
-        String endpoint = stripTrailingSlash(s3Properties.getEndpoint());
+        String endpoint = StorageObjectKeyGenerator.stripTrailingSlash(s3Properties.getEndpoint());
         if (StringUtils.hasText(endpoint)) {
             return buildEndpointAccessUrl(endpoint, encodedKey);
         }
@@ -314,12 +326,6 @@ public class S3StorageBackend implements StorageBackend, AutoCloseable {
                 + region
                 + ".amazonaws.com/"
                 + encodedKey;
-    }
-
-    private void validate() {
-        if (!StringUtils.hasText(s3Properties.getBucket())) {
-            throw new IllegalStateException("zippyboot.infra.storage.s3.bucket must not be blank");
-        }
     }
 
     private String buildEndpointAccessUrl(String endpoint, String key) {
@@ -377,22 +383,17 @@ public class S3StorageBackend implements StorageBackend, AutoCloseable {
         return bucket + "/" + encodedKey;
     }
 
-    private String stripTrailingSlash(String value) {
-        if (!StringUtils.hasText(value)) {
-            return value;
-        }
-        String normalized = value.trim();
-        while (normalized.endsWith("/")) {
-            normalized = normalized.substring(0, normalized.length() - 1);
-        }
-        return normalized;
-    }
+
+
 
     private UploadedFileInfo putObject(String key,
                                        FileUploadRequest request,
                                        boolean failIfExists) throws IOException {
         if (failIfExists && exists(key)) {
             throw new StorageConflictException("Storage object already exists: " + key);
+        }
+        if (request.getSize() > MULTIPART_THRESHOLD) {
+            return putObjectMultipart(key, request);
         }
         PutObjectRequest.Builder putObjectRequest = PutObjectRequest.builder()
                 .bucket(s3Properties.getBucket())
@@ -410,18 +411,102 @@ public class S3StorageBackend implements StorageBackend, AutoCloseable {
         }
     }
 
+    private UploadedFileInfo putObjectMultipart(String key, FileUploadRequest request) throws IOException {
+        String contentType = StringUtils.hasText(request.getContentType()) ? request.getContentType() : "application/octet-stream";
+        CreateMultipartUploadResponse createResponse;
+        try {
+            createResponse = s3Client.createMultipartUpload(CreateMultipartUploadRequest.builder()
+                    .bucket(s3Properties.getBucket())
+                    .key(key)
+                    .contentType(contentType)
+                    .build());
+        } catch (SdkException exception) {
+            throw new StorageBackendException("Failed to initiate multipart upload for S3: " + key, exception);
+        }
+        String uploadId = createResponse.uploadId();
+        List<CompletedPart> completedParts = new ArrayList<>();
+        try (InputStream inputStream = request.openStream()) {
+            byte[] buffer = new byte[(int) PART_SIZE];
+            int partNumber = 1;
+            long totalRead = 0;
+            int bytesRead;
+            while ((bytesRead = inputStream.read(buffer)) != -1) {
+                byte[] partData = bytesRead == buffer.length ? buffer : Arrays.copyOf(buffer, bytesRead);
+                UploadPartResponse partResponse;
+                try {
+                    partResponse = s3Client.uploadPart(UploadPartRequest.builder()
+                            .bucket(s3Properties.getBucket())
+                            .key(key)
+                            .uploadId(uploadId)
+                            .partNumber(partNumber)
+                            .contentLength((long) bytesRead)
+                            .build(), RequestBody.fromBytes(partData));
+                } catch (SdkException exception) {
+                    abortMultipartQuietly(key, uploadId);
+                    throw new StorageBackendException("Failed to upload part " + partNumber + " for S3 key: " + key, exception);
+                }
+                completedParts.add(CompletedPart.builder()
+                        .partNumber(partNumber)
+                        .eTag(partResponse.eTag())
+                        .build());
+                totalRead += bytesRead;
+                partNumber++;
+            }
+            if (request.getSize() > 0 && totalRead != request.getSize()) {
+                abortMultipartQuietly(key, uploadId);
+                throw new StorageBackendException("Upload size mismatch for key " + key
+                        + ": expected=" + request.getSize() + ", actual=" + totalRead);
+            }
+        } catch (IOException exception) {
+            abortMultipartQuietly(key, uploadId);
+            throw exception;
+        }
+        try {
+            s3Client.completeMultipartUpload(CompleteMultipartUploadRequest.builder()
+                    .bucket(s3Properties.getBucket())
+                    .key(key)
+                    .uploadId(uploadId)
+                    .multipartUpload(CompletedMultipartUpload.builder()
+                            .parts(completedParts)
+                            .build())
+                    .build());
+        } catch (SdkException exception) {
+            abortMultipartQuietly(key, uploadId);
+            throw new StorageBackendException("Failed to complete multipart upload for S3: " + key, exception);
+        }
+        return buildUploadedFileInfo(key, request);
+    }
+
+    private void abortMultipartQuietly(String key, String uploadId) {
+        // best-effort cleanup: if completeMultipartUpload has already succeeded on S3,
+        // the abort is a no-op and the object remains. This is an S3 design constraint.
+        try {
+            s3Client.abortMultipartUpload(AbortMultipartUploadRequest.builder()
+                    .bucket(s3Properties.getBucket())
+                    .key(key)
+                    .uploadId(uploadId)
+                    .build());
+        } catch (Exception ignored) {
+        }
+    }
+
     private UploadedFileInfo putObjectWithSuffix(String normalizedKey, FileUploadRequest request) throws IOException {
-        int suffix = 0;
-        while (true) {
+        // NOTE: Unlike LocalStorageBackend which uses CREATE_NEW for atomic conflict detection,
+        // S3 PutObject has no conditional-write primitive. The exists() + putObject() sequence
+        // has a TOCTOU window where a concurrent write could create the same key. This is an
+        // inherent S3 limitation — the conflict would manifest as a silent overwrite rather than
+        // an error. Applications requiring strict uniqueness should use UUID-based keys (default).
+        for (int suffix = 0; suffix < MAX_SUFFIX_RETRIES; suffix++) {
             String candidateKey = suffix == 0
                     ? normalizedKey
                     : StorageObjectKeyGenerator.appendNumericSuffix(normalizedKey, suffix);
             try {
                 return putObject(candidateKey, request, true);
             } catch (StorageConflictException exception) {
-                suffix++;
+                // try next suffix
             }
         }
+        throw new StorageBackendException("Failed to find available key after " + MAX_SUFFIX_RETRIES + " attempts: " + normalizedKey);
     }
 
     private UploadedFileInfo buildUploadedFileInfo(String key, FileUploadRequest request) {
@@ -441,12 +526,4 @@ public class S3StorageBackend implements StorageBackend, AutoCloseable {
         return conflictStrategy == null ? StorageConflictStrategy.APPEND_SUFFIX : conflictStrategy;
     }
 
-    private void deleteQuietly(String key, IOException originalException) throws IOException {
-        try {
-            delete(key);
-        } catch (IOException rollbackException) {
-            originalException.addSuppressed(rollbackException);
-            throw originalException;
-        }
-    }
 }
