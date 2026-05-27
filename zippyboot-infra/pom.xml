@@ -95,6 +95,10 @@
             <artifactId>gt-epsg-hsql</artifactId>
         </dependency>
         <dependency>
+            <groupId>com.github.promeg</groupId>
+            <artifactId>tinypinyin</artifactId>
+        </dependency>
+        <dependency>
             <groupId>org.projectlombok</groupId>
             <artifactId>lombok</artifactId>
             <optional>true</optional>

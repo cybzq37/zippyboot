@@ -1,43 +1,34 @@
 package com.zippyboot.infra.geo.shp;
 
-import org.geotools.api.data.FeatureWriter;
-import org.geotools.api.data.Transaction;
-import org.geotools.api.feature.simple.SimpleFeature;
-import org.geotools.api.feature.simple.SimpleFeatureType;
-import org.geotools.data.DataUtilities;
-import org.geotools.data.shapefile.ShapefileDataStore;
-import org.geotools.data.shapefile.ShapefileDataStoreFactory;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
-import org.locationtech.jts.geom.Coordinate;
-import org.locationtech.jts.geom.GeometryFactory;
-
-import java.io.Serializable;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 class ShpReaderTest {
-
-    private static final GeometryFactory GEOMETRY_FACTORY = new GeometryFactory();
 
     @TempDir
     Path tempDir;
 
     @Test
     void shouldReadShapefileIntoStructuredResult() throws Exception {
-        Path shpPath = createPointShapefile();
+        Path shpPath = ShpTestSupport.createPointShapefile(tempDir, "sample", "alice");
 
-        List<ShpFeatureData> features = ShpReader.read(shpPath.toString());
+        ShpReadResult result = ShpReader.read(shpPath.toString());
+        List<ShpFeatureData> features = result.features();
 
         assertEquals(1, features.size());
-        assertEquals("sample", features.getFirst().typeName());
+        assertEquals("sample", result.schema().typeName());
+        assertEquals(1, result.schema().fields().size());
+        assertEquals("name", result.schema().fields().getFirst().originalName());
+        assertEquals("name", result.schema().fields().getFirst().normalizedName());
         assertEquals("alice", features.getFirst().attributes().get("name"));
         assertNotNull(features.getFirst().geometry());
         assertEquals("POINT (116.4 39.9)", features.getFirst().geometry().wkt());
@@ -45,10 +36,10 @@ class ShpReaderTest {
 
     @Test
     void shouldRespectReadOptions() throws Exception {
-        Path shpPath = createPointShapefile();
-        ShpReadOptions options = new ShpReadOptions(StandardCharsets.UTF_8, false, true, false, false, "sample");
+        Path shpPath = ShpTestSupport.createPointShapefile(tempDir, "sample", "alice");
+        ShpReadOptions options = new ShpReadOptions(StandardCharsets.UTF_8, true, false, true, false, false, "sample");
 
-        List<ShpFeatureData> features = ShpReader.read(shpPath.toString(), options);
+        List<ShpFeatureData> features = ShpReader.read(shpPath.toString(), options).features();
 
         assertNull(features.getFirst().geometry().geometry());
         assertNotNull(features.getFirst().geometry().wkt());
@@ -56,31 +47,48 @@ class ShpReaderTest {
         assertNull(features.getFirst().geometry().csv());
     }
 
-    private Path createPointShapefile() throws Exception {
-        Path shpPath = tempDir.resolve("sample.shp");
+    @Test
+    void shouldReadShapefileFromDirectoryPath() throws Exception {
+        ShpTestSupport.createPointShapefile(tempDir, "sample", "alice");
 
-        ShapefileDataStoreFactory factory = new ShapefileDataStoreFactory();
-        Map<String, Serializable> params = new HashMap<>();
-        params.put("url", shpPath.toUri().toURL());
-        params.put("create spatial index", Boolean.TRUE);
+        ShpReadResult result = ShpReader.read(tempDir.toString());
 
-        ShapefileDataStore dataStore = (ShapefileDataStore) factory.createNewDataStore(params);
-        try {
-            SimpleFeatureType featureType = DataUtilities.createType("sample", "the_geom:Point:srid=4326,name:String");
-            dataStore.createSchema(featureType);
-            dataStore.setCharset(StandardCharsets.UTF_8);
+        assertEquals(1, result.features().size());
+        assertEquals("alice", result.features().getFirst().attributes().get("name"));
+    }
 
-            try (FeatureWriter<SimpleFeatureType, SimpleFeature> writer =
-                         dataStore.getFeatureWriterAppend(dataStore.getTypeNames()[0], Transaction.AUTO_COMMIT)) {
-                SimpleFeature feature = writer.next();
-                feature.setAttribute("the_geom", GEOMETRY_FACTORY.createPoint(new Coordinate(116.4, 39.9)));
-                feature.setAttribute("name", "alice");
-                writer.write();
-            }
-        } finally {
-            dataStore.dispose();
-        }
+    @Test
+    void shouldSelectShapefileByTypeNameFromDirectory() throws Exception {
+        ShpTestSupport.createPointShapefile(tempDir, "sample", "alice");
+        ShpTestSupport.createPointShapefile(tempDir, "roads", "beijing");
+        ShpReadOptions options = new ShpReadOptions(StandardCharsets.UTF_8, true, true, true, true, true, "roads");
 
-        return shpPath;
+        ShpReadResult result = ShpReader.read(tempDir.toString(), options);
+
+        assertEquals("roads", result.schema().typeName());
+        assertEquals("beijing", result.features().getFirst().attributes().get("name"));
+    }
+
+    @Test
+    void shouldFailWhenDirectoryContainsMultipleShapefilesWithoutTypeName() throws Exception {
+        ShpTestSupport.createPointShapefile(tempDir, "sample", "alice");
+        ShpTestSupport.createPointShapefile(tempDir, "roads", "beijing");
+
+        assertThrows(java.io.IOException.class, () -> ShpReader.read(tempDir.toString()));
+    }
+
+    @Test
+    void shouldReadShapefileFromZipPath() throws Exception {
+        Path sourceDir = Files.createDirectories(tempDir.resolve("zip-source"));
+        Path shpPath = ShpTestSupport.createPointShapefile(sourceDir, "sample", "alice");
+        Path zipPath = tempDir.resolve("sample.zip");
+
+        ShpTestSupport.zipFiles(ShpTestSupport.listSidecarFiles(shpPath), zipPath);
+
+        ShpReadResult result = ShpReader.read(zipPath.toString());
+
+        assertEquals(1, result.features().size());
+        assertEquals("sample", result.schema().typeName());
+        assertEquals("alice", result.features().getFirst().attributes().get("name"));
     }
 }

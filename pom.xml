@@ -31,6 +31,7 @@
         <disruptor.version>3.4.4</disruptor.version>
         <dynamic-datasource.version>4.3.1</dynamic-datasource.version>
         <okhttp.version>4.12.0</okhttp.version>
+        <tinypinyin.version>2.0.3</tinypinyin.version>
         <maven-compiler-plugin.version>3.13.0</maven-compiler-plugin.version>
         <maven-surefire-plugin.version>3.5.0</maven-surefire-plugin.version>
         <maven.compiler.release>${java.version}</maven.compiler.release>
@@ -127,6 +128,11 @@
                 <groupId>com.lmax</groupId>
                 <artifactId>disruptor</artifactId>
                 <version>${disruptor.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.github.promeg</groupId>
+                <artifactId>tinypinyin</artifactId>
+                <version>${tinypinyin.version}</version>
             </dependency>
         </dependencies>
     </dependencyManagement>

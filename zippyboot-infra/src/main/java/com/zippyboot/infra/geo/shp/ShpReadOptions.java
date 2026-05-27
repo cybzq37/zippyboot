@@ -5,6 +5,7 @@ import java.nio.charset.StandardCharsets;
 
 public record ShpReadOptions(
         Charset charset,
+        boolean normalizeFieldNames,
         boolean includeGeometry,
         boolean includeWkt,
         boolean includeGeoJson,
@@ -16,6 +17,6 @@ public record ShpReadOptions(
     }
 
     public static ShpReadOptions defaults() {
-        return new ShpReadOptions(StandardCharsets.UTF_8, true, true, true, true, null);
+        return new ShpReadOptions(StandardCharsets.UTF_8, true, true, true, true, true, null);
     }
 }
