@@ -10,12 +10,10 @@ public class UploadedFileInfo {
 
     StorageType storageType;
     String bucket;
-    String objectKey;
+    String key;
     String originalFilename;
     String storedFilename;
     String contentType;
     long size;
-    String relativePath;
-    String absolutePath;
     String accessUrl;
 }

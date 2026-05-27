@@ -61,19 +61,22 @@ zippyboot:
       login-type: login
       token-prefix: Bearer
     storage:
-      # local | s3 | minio | seaweedfs | rustfs | aliyun_oss
-      type: local
+      # LOCAL | S3
+      type: LOCAL
       public-base-url: ""
       date-path-pattern: yyyy/MM/dd
-      # uuid | origin
-      filename-strategy: uuid
+      # UUID | ORIGINAL
+      filename-strategy: UUID
+      # APPEND_SUFFIX | FAIL | OVERWRITE
+      conflict-strategy: APPEND_SUFFIX
       local:
         root-path: ./uploads
         access-path-prefix: /uploads
-      object:
+      s3:
         bucket: zippyboot
         endpoint: ""
-        region: ""
+        region: us-east-1
         access-key: ""
         secret-key: ""
         domain: ""
+        path-style-access: true

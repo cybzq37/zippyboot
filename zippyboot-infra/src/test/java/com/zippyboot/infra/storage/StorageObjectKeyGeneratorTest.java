@@ -1,0 +1,48 @@
+package com.zippyboot.infra.storage;
+
+import com.zippyboot.infra.storage.config.StorageFilenameStrategy;
+import com.zippyboot.infra.storage.support.StorageObjectKeyGenerator;
+import org.junit.jupiter.api.Test;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
+class StorageObjectKeyGeneratorTest {
+
+    @Test
+    void shouldGenerateNormalizedKeyWithOriginalFilenameStrategy() {
+        StorageObjectKeyGenerator generator = new StorageObjectKeyGenerator("yyyy/MM/dd", StorageFilenameStrategy.ORIGINAL);
+
+        String key = generator.generate("folder\\Monthly Report (Final).PDF");
+
+        assertTrue(key.matches("\\d{4}/\\d{2}/\\d{2}/Monthly_Report_Final\\.pdf"));
+    }
+
+    @Test
+    void shouldNormalizeDuplicateSlashesAndLeadingSlash() {
+        assertEquals("a/b/c.txt", StorageObjectKeyGenerator.normalizeKey("//a//b/c.txt"));
+    }
+
+    @Test
+    void shouldAppendSuffixBeforeFileExtension() {
+        assertEquals("a/b/report_2.txt", StorageObjectKeyGenerator.appendNumericSuffix("a/b/report.txt", 2));
+        assertEquals("report_1", StorageObjectKeyGenerator.appendNumericSuffix("report", 1));
+    }
+
+    @Test
+    void shouldGenerateStoredFilenameUnderPrefix() {
+        StorageObjectKeyGenerator generator = new StorageObjectKeyGenerator("yyyy/MM/dd", StorageFilenameStrategy.ORIGINAL);
+
+        assertEquals("avatars/user-1/profile.png", generator.generateUnderPrefix("avatars/user-1", "profile.png"));
+    }
+
+    @Test
+    void shouldRejectInvalidObjectKeySegmentsAndKeepPrefixCompatible() {
+        assertThrows(IllegalArgumentException.class,
+                () -> StorageObjectKeyGenerator.requireValidKey("docs/../readme.txt", "key"));
+        assertThrows(IllegalArgumentException.class,
+                () -> StorageObjectKeyGenerator.requireValidKey("docs/readme.txt/", "key"));
+        assertEquals("avatars/user-1", StorageObjectKeyGenerator.requireValidPrefix("avatars/user-1/", "dir"));
+    }
+}
