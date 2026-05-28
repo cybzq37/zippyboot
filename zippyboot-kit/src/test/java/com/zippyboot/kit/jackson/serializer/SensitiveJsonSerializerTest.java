@@ -1,4 +1,4 @@
-package com.zippyboot.kit.jackson.jackson;
+package com.zippyboot.kit.jackson.serializer;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.zippyboot.kit.jackson.config.JacksonConfig;

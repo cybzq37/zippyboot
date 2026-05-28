@@ -1,4 +1,4 @@
-package com.zippyboot.kit.jackson.jackson;
+package com.zippyboot.kit.jackson.serializer;
 
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.databind.BeanProperty;
@@ -9,12 +9,14 @@ import com.fasterxml.jackson.databind.ser.ContextualSerializer;
 import com.zippyboot.kit.jackson.plugins.sensitive.Sensitive;
 import com.zippyboot.kit.jackson.plugins.sensitive.SensitiveService;
 import com.zippyboot.kit.jackson.plugins.sensitive.SensitiveStrategy;
-import org.springframework.beans.factory.annotation.Autowired;
 
 import java.io.IOException;
 
 /**
- * 数据脱敏json序列化工具
+ * 数据脱敏 JSON 序列化器
+ * <p>
+ * 通过 {@link SensitiveServiceHolder} 获取 Spring 管理的 {@link SensitiveService}，
+ * 避免在 Jackson 直接实例化的序列化器上使用 {@code @Autowired}。
  *
  * @author Yjoioooo
  */
@@ -32,23 +34,25 @@ public class SensitiveJsonSerializer extends JsonSerializer<String> implements C
         this.sensitiveService = sensitiveService;
     }
 
-    @Autowired(required = false)
-    public SensitiveJsonSerializer(SensitiveService sensitiveService) {
-        this(null, sensitiveService);
-    }
-
     @Override
     public void serialize(String value, JsonGenerator gen, SerializerProvider serializers) throws IOException {
         if (value == null) {
             gen.writeNull();
             return;
         }
-        if (strategy == null || (sensitiveService != null && !sensitiveService.isSensitive())) {
+        if (strategy == null || !shouldDesensitize()) {
             gen.writeString(value);
             return;
         }
+        gen.writeString(strategy.mask(value));
+    }
 
-        gen.writeString(strategy.desensitizer().apply(value));
+    private boolean shouldDesensitize() {
+        SensitiveService service = sensitiveService;
+        if (service == null) {
+            service = SensitiveServiceHolder.getInstance();
+        }
+        return service == null || service.isSensitive();
     }
 
     @Override
@@ -62,7 +66,8 @@ public class SensitiveJsonSerializer extends JsonSerializer<String> implements C
             annotation = property.getContextAnnotation(Sensitive.class);
         }
         if (annotation != null && String.class.equals(property.getType().getRawClass())) {
-            return new SensitiveJsonSerializer(annotation.strategy(), sensitiveService);
+            SensitiveService service = SensitiveServiceHolder.getInstance();
+            return new SensitiveJsonSerializer(annotation.strategy(), service);
         }
         return prov.findValueSerializer(property.getType(), property);
     }

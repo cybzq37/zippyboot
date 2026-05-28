@@ -8,6 +8,7 @@ package com.zippyboot.kit.jackson.plugins.sensitive;
  * @author lichunqing
  * @version 3.6.0
  */
+@FunctionalInterface
 public interface SensitiveService {
 
     /**

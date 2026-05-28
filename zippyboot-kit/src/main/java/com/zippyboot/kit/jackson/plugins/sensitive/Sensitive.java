@@ -2,7 +2,7 @@ package com.zippyboot.kit.jackson.plugins.sensitive;
 
 import com.fasterxml.jackson.annotation.JacksonAnnotationsInside;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
-import com.zippyboot.kit.jackson.jackson.SensitiveJsonSerializer;
+import com.zippyboot.kit.jackson.serializer.SensitiveJsonSerializer;
 
 import java.lang.annotation.Documented;
 import java.lang.annotation.ElementType;

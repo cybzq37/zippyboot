@@ -13,7 +13,7 @@ import java.util.regex.Pattern;
 public class XssValidator implements ConstraintValidator<Xss, String> {
 
     private static final Pattern XSS_PATTERN = Pattern.compile(
-            "(?i)(<[^>]+>)|(javascript:)|((?:on[a-z]+)\\s*=)"
+            "(?i)(<[^>]+>)|(javascript\\s*:)|((?:on[a-z]+)\\s*=)|(data\\s*:.*?(?:text/html|application/xhtml\\+xml))|(vbscript\\s*:)"
     );
 
     @Override

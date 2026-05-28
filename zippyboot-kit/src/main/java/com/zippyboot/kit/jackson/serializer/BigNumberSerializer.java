@@ -1,4 +1,4 @@
-package com.zippyboot.kit.jackson.jackson;
+package com.zippyboot.kit.jackson.serializer;
 
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.databind.SerializerProvider;
@@ -29,12 +29,17 @@ public final class BigNumberSerializer extends NumberSerializer {
      */
     public static final BigNumberSerializer INSTANCE = new BigNumberSerializer(Number.class);
 
+    // public — required by @JacksonStdImpl
     public BigNumberSerializer(Class<? extends Number> rawType) {
         super(rawType);
     }
 
     @Override
     public void serialize(Number value, JsonGenerator gen, SerializerProvider provider) throws IOException {
+        if (value == null) {
+            gen.writeNull();
+            return;
+        }
         if (isSafeNumber(value)) {
             super.serialize(value, gen, provider);
         } else {
@@ -43,12 +48,10 @@ public final class BigNumberSerializer extends NumberSerializer {
     }
 
     private boolean isSafeNumber(Number value) {
-        if (value instanceof BigInteger) {
-            BigInteger bigInteger = (BigInteger) value;
+        if (value instanceof BigInteger bigInteger) {
             return bigInteger.compareTo(MIN_SAFE_INTEGER_BIGINT) >= 0
                     && bigInteger.compareTo(MAX_SAFE_INTEGER_BIGINT) <= 0;
         }
-
         long val = value.longValue();
         return val >= MIN_SAFE_INTEGER && val <= MAX_SAFE_INTEGER;
     }

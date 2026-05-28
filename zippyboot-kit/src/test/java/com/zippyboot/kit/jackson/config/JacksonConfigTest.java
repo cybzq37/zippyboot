@@ -21,6 +21,7 @@ class JacksonConfigTest {
                 9007199254740991L,
                 9007199254740992L,
                 new BigInteger("9007199254740992"),
+                new BigInteger("100"),
                 new BigDecimal("123.45"),
                 LocalDateTime.of(2026, 5, 28, 13, 45, 30)
         );
@@ -29,7 +30,8 @@ class JacksonConfigTest {
 
         assertThat(json.get("safeLong").isNumber()).isTrue();
         assertThat(json.get("unsafeLong").isTextual()).isTrue();
-        assertThat(json.get("bigInteger").isTextual()).isTrue();
+        assertThat(json.get("unsafeBigInteger").isTextual()).isTrue();
+        assertThat(json.get("safeBigInteger").isNumber()).isTrue();
         assertThat(json.get("bigDecimal").isTextual()).isTrue();
         assertThat(json.get("createdAt").textValue()).isEqualTo("2026-05-28 13:45:30");
     }
@@ -43,7 +45,8 @@ class JacksonConfigTest {
     private record NumberPayload(
             Long safeLong,
             Long unsafeLong,
-            BigInteger bigInteger,
+            BigInteger unsafeBigInteger,
+            BigInteger safeBigInteger,
             BigDecimal bigDecimal,
             LocalDateTime createdAt
     ) {

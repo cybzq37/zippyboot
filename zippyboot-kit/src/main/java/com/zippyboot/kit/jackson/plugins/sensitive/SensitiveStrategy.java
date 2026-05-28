@@ -46,6 +46,13 @@ public enum SensitiveStrategy {
         return desensitizer;
     }
 
+    /**
+     * 对字符串进行脱敏处理
+     */
+    public String mask(String value) {
+        return desensitizer.apply(value);
+    }
+
     private static String maskEmail(String value) {
         if (value == null || value.isBlank()) {
             return value;
