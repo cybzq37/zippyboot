@@ -16,10 +16,6 @@
     <dependencies>
         <dependency>
             <groupId>com.zippyboot</groupId>
-            <artifactId>zippyboot-model</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>com.zippyboot</groupId>
             <artifactId>zippyboot-kit</artifactId>
         </dependency>
         <dependency>

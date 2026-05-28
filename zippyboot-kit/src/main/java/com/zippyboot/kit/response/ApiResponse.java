@@ -35,6 +35,10 @@ public final class ApiResponse<T> {
         return success(null, null, null, data);
     }
 
+    public static <T> ApiResponse<T> fail(String message) {
+        return new ApiResponse<>("-1", message, Instant.now(), null, null);
+    }
+
     public String getCode() {
         return code;
     }

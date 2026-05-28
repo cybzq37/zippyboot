@@ -1,6 +1,6 @@
 package com.zippyboot.netty.controller;
 
-import com.zippyboot.model.ApiResponse;
+import com.zippyboot.kit.response.ApiResponse;
 import com.zippyboot.netty.service.NettyServerManager;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.GetMapping;

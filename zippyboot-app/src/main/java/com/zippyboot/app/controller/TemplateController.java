@@ -6,7 +6,7 @@ import com.zippyboot.infra.es.ElasticsearchTemplate;
 import com.zippyboot.infra.kafka.KafkaProducerTemplate;
 import com.zippyboot.infra.redis.RedisTemplate;
 import com.zippyboot.infra.satoken.config.SaTokenProperties;
-import com.zippyboot.model.ApiResponse;
+import com.zippyboot.kit.response.ApiResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.kafka.support.KafkaHeaders;
