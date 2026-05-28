@@ -124,10 +124,49 @@ zippyboot:
         path-style-access: true
 ```
 
-## versions
+## Version Management
 
-子模块保留固定写法 `<version>1.0.0-SNAPSHOT</version>`  
-升级版本时只执行一次命令批量更新所有子模块 `mvn -N versions:update-child-modules`
+项目为三层多模块结构，所有模块共享同一版本号，由根 POM 统一管理：
+
+```
+zippyboot (root)
+├── zippyboot-api
+├── zippyboot-app
+├── zippyboot-model
+├── zippyboot-kit
+├── zippyboot-netty
+└── zippyboot-infra
+    ├── zippyboot-infra-redis
+    ├── zippyboot-infra-kafka
+    ├── zippyboot-infra-es
+    ├── zippyboot-infra-mybatis
+    ├── zippyboot-infra-storage
+    ├── zippyboot-infra-geo
+    ├── zippyboot-infra-web
+    └── zippyboot-infra-satoken
+```
+
+各子模块通过 `<parent>` 继承版本，内部依赖通过根 POM 的 `dependencyManagement` + `${project.version}` 统一管理，无需在子模块中硬编码版本。
+
+### 升级版本
+
+一条命令更新所有模块（根 POM + 全部子模块）的 version 和 parent version：
+
+```bash
+mvn versions:set -DnewVersion=2.0.0-SNAPSHOT
+```
+
+确认无误后提交变更：
+
+```bash
+mvn versions:commit
+```
+
+如需回退：
+
+```bash
+mvn versions:revert
+```
 
 
 还缺少定时任务模块
