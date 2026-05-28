@@ -2,6 +2,7 @@ package com.zippyboot.kit.jackson.plugins.xss;
 
 import jakarta.validation.Constraint;
 import jakarta.validation.Payload;
+import java.lang.annotation.Documented;
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
@@ -12,8 +13,9 @@ import java.lang.annotation.Target;
  *
  * @author lichunqing
  */
+@Documented
 @Retention(RetentionPolicy.RUNTIME)
-@Target(value = {ElementType.METHOD, ElementType.FIELD, ElementType.CONSTRUCTOR, ElementType.PARAMETER})
+@Target(value = {ElementType.METHOD, ElementType.FIELD, ElementType.CONSTRUCTOR, ElementType.PARAMETER, ElementType.RECORD_COMPONENT})
 @Constraint(validatedBy = {XssValidator.class})
 public @interface Xss {
 

@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.JacksonAnnotationsInside;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.zippyboot.kit.jackson.jackson.SensitiveJsonSerializer;
 
+import java.lang.annotation.Documented;
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
@@ -14,8 +15,9 @@ import java.lang.annotation.Target;
  *
  * @author lichunqing
  */
+@Documented
 @Retention(RetentionPolicy.RUNTIME)
-@Target(ElementType.FIELD)
+@Target({ElementType.FIELD, ElementType.METHOD, ElementType.ANNOTATION_TYPE, ElementType.RECORD_COMPONENT})
 @JacksonAnnotationsInside
 @JsonSerialize(using = SensitiveJsonSerializer.class)
 public @interface Sensitive {

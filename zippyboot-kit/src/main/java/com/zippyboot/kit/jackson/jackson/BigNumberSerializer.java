@@ -14,13 +14,15 @@ import java.math.BigInteger;
  * @author lichunqing
  */
 @JacksonStdImpl
-public class BigNumberSerializer extends NumberSerializer {
+public final class BigNumberSerializer extends NumberSerializer {
 
     /**
      * 根据 JS Number.MAX_SAFE_INTEGER 与 Number.MIN_SAFE_INTEGER 得来
      */
     private static final long MAX_SAFE_INTEGER = 9007199254740991L;
     private static final long MIN_SAFE_INTEGER = -9007199254740991L;
+    private static final BigInteger MAX_SAFE_INTEGER_BIGINT = BigInteger.valueOf(MAX_SAFE_INTEGER);
+    private static final BigInteger MIN_SAFE_INTEGER_BIGINT = BigInteger.valueOf(MIN_SAFE_INTEGER);
 
     /**
      * 提供实例
@@ -43,9 +45,8 @@ public class BigNumberSerializer extends NumberSerializer {
     private boolean isSafeNumber(Number value) {
         if (value instanceof BigInteger) {
             BigInteger bigInteger = (BigInteger) value;
-            BigInteger max = BigInteger.valueOf(MAX_SAFE_INTEGER);
-            BigInteger min = BigInteger.valueOf(MIN_SAFE_INTEGER);
-            return bigInteger.compareTo(min) >= 0 && bigInteger.compareTo(max) <= 0;
+            return bigInteger.compareTo(MIN_SAFE_INTEGER_BIGINT) >= 0
+                    && bigInteger.compareTo(MAX_SAFE_INTEGER_BIGINT) <= 0;
         }
 
         long val = value.longValue();

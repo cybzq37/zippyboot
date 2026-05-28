@@ -12,15 +12,16 @@ import java.util.regex.Pattern;
  */
 public class XssValidator implements ConstraintValidator<Xss, String> {
 
-    public final static String RE_HTML_MARK = "(<[^<]*?>)|(<[\\s]*?/[^<]*?>)|(<[^<]*?/[\\s]*?>)";
-    private static final Pattern HTML_TAG_PATTERN = Pattern.compile(RE_HTML_MARK);
+    private static final Pattern XSS_PATTERN = Pattern.compile(
+            "(?i)(<[^>]+>)|(javascript:)|((?:on[a-z]+)\\s*=)"
+    );
 
     @Override
     public boolean isValid(String value, ConstraintValidatorContext constraintValidatorContext) {
         if (value == null || value.isBlank()) {
             return true;
         }
-        return !HTML_TAG_PATTERN.matcher(value).find();
+        return !XSS_PATTERN.matcher(value).find();
     }
 
 }

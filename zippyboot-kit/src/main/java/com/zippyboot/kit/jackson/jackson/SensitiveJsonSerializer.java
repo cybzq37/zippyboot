@@ -6,13 +6,12 @@ import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.JsonSerializer;
 import com.fasterxml.jackson.databind.SerializerProvider;
 import com.fasterxml.jackson.databind.ser.ContextualSerializer;
-import com.zippyboot.kit.jackson.config.SpringBeanHolder;
 import com.zippyboot.kit.jackson.plugins.sensitive.Sensitive;
 import com.zippyboot.kit.jackson.plugins.sensitive.SensitiveService;
 import com.zippyboot.kit.jackson.plugins.sensitive.SensitiveStrategy;
+import org.springframework.beans.factory.annotation.Autowired;
 
 import java.io.IOException;
-import java.util.Objects;
 
 /**
  * 数据脱敏json序列化工具
@@ -22,19 +21,29 @@ import java.util.Objects;
 public class SensitiveJsonSerializer extends JsonSerializer<String> implements ContextualSerializer {
 
     private final SensitiveStrategy strategy;
+    private final SensitiveService sensitiveService;
 
     public SensitiveJsonSerializer() {
-        this(null);
+        this(null, null);
     }
 
-    public SensitiveJsonSerializer(SensitiveStrategy strategy) {
+    private SensitiveJsonSerializer(SensitiveStrategy strategy, SensitiveService sensitiveService) {
         this.strategy = strategy;
+        this.sensitiveService = sensitiveService;
+    }
+
+    @Autowired(required = false)
+    public SensitiveJsonSerializer(SensitiveService sensitiveService) {
+        this(null, sensitiveService);
     }
 
     @Override
     public void serialize(String value, JsonGenerator gen, SerializerProvider serializers) throws IOException {
-        SensitiveService sensitiveService = SpringBeanHolder.getBean(SensitiveService.class);
-        if (sensitiveService == null || !sensitiveService.isSensitive() || strategy == null || value == null) {
+        if (value == null) {
+            gen.writeNull();
+            return;
+        }
+        if (strategy == null || (sensitiveService != null && !sensitiveService.isSensitive())) {
             gen.writeString(value);
             return;
         }
@@ -45,12 +54,15 @@ public class SensitiveJsonSerializer extends JsonSerializer<String> implements C
     @Override
     public JsonSerializer<?> createContextual(SerializerProvider prov, BeanProperty property) throws JsonMappingException {
         if (property == null) {
-            return prov.findNullValueSerializer(null);
+            return this;
         }
 
         Sensitive annotation = property.getAnnotation(Sensitive.class);
-        if (Objects.nonNull(annotation) && Objects.equals(String.class, property.getType().getRawClass())) {
-            return new SensitiveJsonSerializer(annotation.strategy());
+        if (annotation == null) {
+            annotation = property.getContextAnnotation(Sensitive.class);
+        }
+        if (annotation != null && String.class.equals(property.getType().getRawClass())) {
+            return new SensitiveJsonSerializer(annotation.strategy(), sensitiveService);
         }
         return prov.findValueSerializer(property.getType(), property);
     }
