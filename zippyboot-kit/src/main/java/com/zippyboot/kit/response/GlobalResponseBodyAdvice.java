@@ -2,9 +2,9 @@ package com.zippyboot.kit.response;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.zippyboot.kit.exception.BaseException;
 import com.zippyboot.kit.exception.ErrorResponse;
 import com.zippyboot.kit.exception.GlobalExceptionProperties;
-import com.zippyboot.kit.exception.KitException;
 import org.springframework.core.MethodParameter;
 import org.springframework.core.io.Resource;
 import org.springframework.http.MediaType;
@@ -62,7 +62,7 @@ public class GlobalResponseBodyAdvice implements ResponseBodyAdvice<Object> {
             try {
                 return objectMapper.writeValueAsString(wrapped);
             } catch (JsonProcessingException e) {
-                throw new KitException("KIT-500", "Serialize wrapped string response failed", e);
+                throw BaseException.internalError("Serialize wrapped string response failed", e);
             }
         }
         return wrapped;
