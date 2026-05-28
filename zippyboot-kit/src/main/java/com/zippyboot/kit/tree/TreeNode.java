@@ -1,10 +1,15 @@
 package com.zippyboot.kit.tree;
 
+import lombok.Getter;
+import lombok.Setter;
+
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
+@Getter
+@Setter
 public class TreeNode<T> {
 
     /** 当前节点 ID。 */
@@ -44,62 +49,6 @@ public class TreeNode<T> {
     }
 
     public boolean isLeaf() {
-        return children == null || children.isEmpty();
-    }
-
-    public T getId() {
-        return id;
-    }
-
-    public void setId(T id) {
-        this.id = id;
-    }
-
-    public T getPid() {
-        return pid;
-    }
-
-    public void setPid(T pid) {
-        this.pid = pid;
-    }
-
-    public String getCode() {
-        return code;
-    }
-
-    public void setCode(String code) {
-        this.code = code;
-    }
-
-    public String getLabel() {
-        return label;
-    }
-
-    public void setLabel(String label) {
-        this.label = label;
-    }
-
-    public Integer getSort() {
-        return sort;
-    }
-
-    public void setSort(Integer sort) {
-        this.sort = sort;
-    }
-
-    public Map<String, Object> getExt() {
-        return ext;
-    }
-
-    public void setExt(Map<String, Object> ext) {
-        this.ext = ext;
-    }
-
-    public List<TreeNode<T>> getChildren() {
-        return children;
-    }
-
-    public void setChildren(List<TreeNode<T>> children) {
-        this.children = children;
+        return children.isEmpty();
     }
 }

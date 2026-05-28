@@ -14,7 +14,7 @@ public class GlobalThreadFactory implements ThreadFactory {
     }
 
     public GlobalThreadFactory(String threadNamePrefix) {
-        this.threadNamePrefix = (threadNamePrefix == null || threadNamePrefix.trim().isEmpty())
+        this.threadNamePrefix = (threadNamePrefix == null || threadNamePrefix.isBlank())
                 ? DEFAULT_PREFIX
                 : threadNamePrefix;
     }
@@ -23,12 +23,8 @@ public class GlobalThreadFactory implements ThreadFactory {
     public Thread newThread(Runnable r) {
         Thread thread = new Thread(r);
         thread.setName(threadNamePrefix + "-" + threadIndex.getAndIncrement());
-        if (thread.isDaemon()) {
-            thread.setDaemon(false);
-        }
-        if (Thread.NORM_PRIORITY != thread.getPriority()) {
-            thread.setPriority(Thread.NORM_PRIORITY);
-        }
+        thread.setDaemon(false);
+        thread.setPriority(Thread.NORM_PRIORITY);
         return thread;
     }
 }
