@@ -1,70 +1,40 @@
 package com.zippyboot.kit.okhttp;
 
+import com.zippyboot.kit.util.StringUtils;
+
 import java.io.File;
 
-public class FormDataFile {
+public record FormDataFile(String fieldName, String contentType, String fileName, byte[] fileData, File file) {
 
     private static final String DEFAULT_CONTENT_TYPE = "application/octet-stream";
     private static final String DEFAULT_FIELD_NAME = "file";
 
-    private final String fieldName;
-    private final String contentType;
-    private final String fileName;
-    private final byte[] fileData;
-    private final File file;
-
-    private FormDataFile(String fieldName, String fileName, String contentType, byte[] fileData, File file) {
-        this.fieldName = isBlank(fieldName) ? DEFAULT_FIELD_NAME : fieldName;
-        this.fileName = resolveFileName(fileName, file);
-        this.contentType = isBlank(contentType) ? DEFAULT_CONTENT_TYPE : contentType;
-        this.fileData = fileData;
-        this.file = file;
+    public FormDataFile {
+        fieldName = StringUtils.isBlank(fieldName) ? DEFAULT_FIELD_NAME : fieldName;
+        contentType = StringUtils.isBlank(contentType) ? DEFAULT_CONTENT_TYPE : contentType;
+        fileName = resolveFileName(fileName, file);
     }
 
     public static FormDataFile ofBytes(String fieldName, String fileName, byte[] fileData) {
-        return new FormDataFile(fieldName, fileName, DEFAULT_CONTENT_TYPE, fileData, null);
+        return new FormDataFile(fieldName, DEFAULT_CONTENT_TYPE, fileName, fileData, null);
     }
 
     public static FormDataFile ofBytes(String fieldName, String fileName, String contentType, byte[] fileData) {
-        return new FormDataFile(fieldName, fileName, contentType, fileData, null);
+        return new FormDataFile(fieldName, contentType, fileName, fileData, null);
     }
 
     public static FormDataFile ofFile(String fieldName, String fileName, File file) {
-        return new FormDataFile(fieldName, fileName, DEFAULT_CONTENT_TYPE, null, file);
+        return new FormDataFile(fieldName, DEFAULT_CONTENT_TYPE, fileName, null, file);
     }
 
     public static FormDataFile ofFile(String fieldName, String fileName, String contentType, File file) {
-        return new FormDataFile(fieldName, fileName, contentType, null, file);
+        return new FormDataFile(fieldName, contentType, fileName, null, file);
     }
 
     private static String resolveFileName(String fileName, File file) {
-        if (!isBlank(fileName)) {
+        if (!StringUtils.isBlank(fileName)) {
             return fileName;
         }
         return file != null ? file.getName() : DEFAULT_FIELD_NAME;
-    }
-
-    private static boolean isBlank(String str) {
-        return str == null || str.isBlank();
-    }
-
-    public String getFieldName() {
-        return fieldName;
-    }
-
-    public String getContentType() {
-        return contentType;
-    }
-
-    public String getFileName() {
-        return fileName;
-    }
-
-    public byte[] getFileData() {
-        return fileData;
-    }
-
-    public File getFile() {
-        return file;
     }
 }

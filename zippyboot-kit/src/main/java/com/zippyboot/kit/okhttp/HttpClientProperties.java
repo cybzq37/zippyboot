@@ -33,6 +33,12 @@ public class HttpClientProperties {
      */
     public static final long DEFAULT_CALL_TIMEOUT_SECONDS = 12;
 
+    /**
+     * 响应体最大读取字节数（默认 10MB）。
+     * 超过此限制将截断响应并抛出异常，防止 OOM。
+     */
+    public static final long DEFAULT_MAX_RESPONSE_BYTES = 10 * 1024 * 1024;
+
     /** 建立连接超时（秒）。 */
     private long connectTimeoutSeconds = DEFAULT_CONNECT_TIMEOUT_SECONDS;
 
@@ -50,4 +56,7 @@ public class HttpClientProperties {
 
     /** 是否启用 OkHttp 请求日志拦截器。 */
     private boolean enableLogInterceptor = false;
+
+    /** 响应体最大读取字节数，超过将抛出异常防止 OOM。 */
+    private long maxResponseBytes = DEFAULT_MAX_RESPONSE_BYTES;
 }

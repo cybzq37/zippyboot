@@ -10,27 +10,21 @@
         <version>1.0.0-SNAPSHOT</version>
     </parent>
 
-    <artifactId>zippyboot-infra-redis</artifactId>
-    <name>zippyboot-infra-redis</name>
-    <description>Redis operations</description>
+    <artifactId>zippyboot-infra-satoken</artifactId>
+    <name>zippyboot-infra-satoken</name>
+    <description>Sa-Token authentication integration</description>
 
     <dependencies>
-        <!-- Internal -->
+        <!-- Internal: Redis (RedisSaTokenDao depends on RedisTemplate) -->
         <dependency>
             <groupId>com.zippyboot</groupId>
-            <artifactId>zippyboot-kit</artifactId>
+            <artifactId>zippyboot-infra-redis</artifactId>
         </dependency>
 
-        <!-- Redis -->
+        <!-- Sa-Token -->
         <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-data-redis</artifactId>
-            <exclusions>
-                <exclusion>
-                    <groupId>org.springframework.boot</groupId>
-                    <artifactId>spring-boot-starter-logging</artifactId>
-                </exclusion>
-            </exclusions>
+            <groupId>cn.dev33</groupId>
+            <artifactId>sa-token-spring-boot3-starter</artifactId>
         </dependency>
 
         <dependency>

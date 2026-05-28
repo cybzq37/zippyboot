@@ -30,7 +30,7 @@ public class HttpClientAutoConfiguration {
 
     @Bean
     @ConditionalOnMissingBean
-    public HttpTemplate httpTemplate(OkHttpClient okHttpClient, HttpClientProperties properties) {
-        return new HttpTemplate(okHttpClient, properties.isThrowOnHttpError());
+    public HttpClient httpClient(OkHttpClient okHttpClient, HttpClientProperties properties) {
+        return new HttpClient(okHttpClient, properties.isThrowOnHttpError(), properties.getMaxResponseBytes());
     }
 }

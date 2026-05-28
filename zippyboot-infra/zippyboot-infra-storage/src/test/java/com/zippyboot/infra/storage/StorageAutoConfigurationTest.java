@@ -27,20 +27,20 @@ class StorageAutoConfigurationTest {
     void shouldFailFastWhenS3CredentialsArePartial() {
         contextRunner
                 .withPropertyValues(
-                        "zippyboot.infra.storage.type=S3",
-                        "zippyboot.infra.storage.s3.access-key=test-access-key"
+                        "zippyboot.storage.type=S3",
+                        "zippyboot.storage.s3.access-key=test-access-key"
                 )
                 .run(context -> {
                     assertThat(context).hasFailed();
                     assertThat(context.getStartupFailure())
-                            .hasMessageContaining("Both zippyboot.infra.storage.s3.access-key and secret-key must be configured together");
+                            .hasMessageContaining("Both zippyboot.storage.s3.access-key and secret-key must be configured together");
                 });
     }
 
     @Test
     void shouldUseDedicatedStorageS3ClientBean() {
         contextRunner
-                .withPropertyValues("zippyboot.infra.storage.type=S3")
+                .withPropertyValues("zippyboot.storage.type=S3")
                 .withBean("storageS3Client", S3Client.class, () -> org.mockito.Mockito.mock(S3Client.class))
                 .run(context -> {
                     assertThat(context).hasSingleBean(StorageService.class);

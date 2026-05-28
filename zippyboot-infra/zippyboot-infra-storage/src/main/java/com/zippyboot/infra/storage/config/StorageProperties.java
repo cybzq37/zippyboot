@@ -22,15 +22,15 @@ public class StorageProperties {
 
     public void validate() {
         if (!StringUtils.hasText(datePathPattern)) {
-            throw new IllegalStateException("zippyboot.infra.storage.date-path-pattern must not be blank");
+            throw new IllegalStateException("zippyboot.storage.date-path-pattern must not be blank");
         }
         try {
             DateTimeFormatter.ofPattern(datePathPattern.trim());
         } catch (IllegalArgumentException | DateTimeParseException exception) {
-            throw new IllegalStateException("Invalid zippyboot.infra.storage.date-path-pattern: " + datePathPattern, exception);
+            throw new IllegalStateException("Invalid zippyboot.storage.date-path-pattern: " + datePathPattern, exception);
         }
         if (maxInMemoryReadBytes <= 0) {
-            throw new IllegalStateException("zippyboot.infra.storage.max-in-memory-read-bytes must be greater than 0");
+            throw new IllegalStateException("zippyboot.storage.max-in-memory-read-bytes must be greater than 0");
         }
 
         if (type == StorageType.LOCAL) {
@@ -42,18 +42,18 @@ public class StorageProperties {
 
     private void validateLocal() {
         if (local == null || !StringUtils.hasText(local.getRootPath())) {
-            throw new IllegalStateException("zippyboot.infra.storage.local.root-path must not be blank");
+            throw new IllegalStateException("zippyboot.storage.local.root-path must not be blank");
         }
     }
 
     private void validateS3() {
         if (s3 == null || !StringUtils.hasText(s3.getBucket())) {
-            throw new IllegalStateException("zippyboot.infra.storage.s3.bucket must not be blank");
+            throw new IllegalStateException("zippyboot.storage.s3.bucket must not be blank");
         }
         boolean hasAccessKey = StringUtils.hasText(s3.getAccessKey());
         boolean hasSecretKey = StringUtils.hasText(s3.getSecretKey());
         if (hasAccessKey != hasSecretKey) {
-            throw new IllegalStateException("Both zippyboot.infra.storage.s3.access-key and secret-key must be configured together");
+            throw new IllegalStateException("Both zippyboot.storage.s3.access-key and secret-key must be configured together");
         }
     }
 

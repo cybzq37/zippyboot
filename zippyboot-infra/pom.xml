@@ -23,5 +23,6 @@
         <module>zippyboot-infra-storage</module>
         <module>zippyboot-infra-geo</module>
         <module>zippyboot-infra-web</module>
+        <module>zippyboot-infra-satoken</module>
     </modules>
 </project>

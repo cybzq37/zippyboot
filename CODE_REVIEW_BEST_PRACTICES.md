@@ -13,7 +13,7 @@
 | 1 | 架构 | infra 职责过重，同时承载 Redis/Kafka/ES/MyBatis/Sa-Token/Storage/GIS 七类基础设施 | ~~拆分 geo/storage 为独立模块~~ **已完成** -- 拆为 6 个子模块：infra-redis/kafka/es/mybatis/storage/geo | ~~高~~ |
 | 2 | 架构 | Auto-Configuration 注册不一致，Storage/MyBatis 注册到 imports 文件，而 SaToken/Kafka/ES 依赖组件扫描 | ~~统一使用 `@AutoConfiguration` 并注册到 `imports` 文件~~ **已完成** -- SaTokenConfig/KafkaConsumerAutoConfiguration 改为 `@AutoConfiguration`，ES 新增 `ElasticsearchAutoConfiguration` | ~~高~~ |
 | 3 | 架构 | kit 强制依赖 `spring-webmvc`，导致非 Web 项目被迫引入 MVC 栈 | ~~将 `spring-webmvc` 设为 `optional`~~ **已完成** -- `GlobalExceptionHandler`/`GlobalResponseBodyAdvice` 及相关类移入 `zippyboot-infra-web`，kit 只保留 `BaseException`/`ErrorResponse`/`ApiResponse` 契约类，`spring-web` 改为 optional | ~~中~~ |
-| 4 | 架构 | `GlobalThreadPool` 静态全局单例，core/max/queue 硬编码，无法按业务配置 | 改为 Spring Bean + `@ConfigurationProperties` 配置化 | 中 |
+| 4 | 架构 | `GlobalThreadPool` 静态全局单例，core/max/queue 硬编码，无法按业务配置 | ~~改为 Builder + 懒加载~~ **已完成** -- `getExecutor()` 懒加载开箱即用，`configure(new Builder().coreSize(4).maxSize(16))` 自定义配置，不绑定 Spring | ~~中~~ |
 | 5 | 包结构 | Sa-Token 下用 `utils`，MyBatis 下用 `util`，命名不一致 | 统一为 `util` | 低 |
 | 6 | 包结构 | `@Xss` 是 Bean Validation 注解却放在 `jackson.plugins.xss` 下，名不副实 | 移到 `com.zippyboot.kit.validation` 包下 | 低 |
 | 7 | 包结构 | ES 子模块没有 `config` 包，`ElasticsearchTemplate` 直接放在根包，与其他子模块模式不一致 | 补充 `config` 子包或统一模式 | 低 |
@@ -44,7 +44,7 @@
 ### 中优先级（版本迭代中逐步改进）
 
 5. ~~kit 的 `spring-webmvc` 改为 optional~~ **已完成** -- Web 基础设施类移入 `zippyboot-infra-web`
-6. `GlobalThreadPool` 配置化
+6. ~~`GlobalThreadPool` 配置化~~ **已完成** -- 支持系统属性 + `init()` 编程配置
 7. 移除 `HttpTemplate.getInstance()` 废弃方法
 8. `KafkaProducerTemplate` / `ElasticsearchTemplate` 要么增加附加价值要么移除
 9. `BaseException.code` 语义澄清
