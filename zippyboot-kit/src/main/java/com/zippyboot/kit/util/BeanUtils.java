@@ -27,13 +27,6 @@ public class BeanUtils {
 	private static final Map<String, BeanCopier> BEAN_COPIER_CACHE = new ConcurrentHashMap<>();
 
 	/**
-	 * 对象映射(同名属性拷贝)。
-	 */
-	public static <T> T map(Object source, Class<T> actualEditable) {
-		return copy(source, actualEditable);
-	}
-
-	/**
 	 * 新建目标对象并执行属性拷贝。
 	 */
 	public static <T> T copy(Object source, Class<T> targetClass) {
@@ -197,13 +190,6 @@ public class BeanUtils {
 			result.put(key, beanMap.get(key));
 		}
 		return result;
-	}
-
-	/**
-	 * Bean 转 Map 别名方法。
-	 */
-	public static Map<String, Object> copyToMap(Object bean) {
-		return beanToMap(bean);
 	}
 
 	/**

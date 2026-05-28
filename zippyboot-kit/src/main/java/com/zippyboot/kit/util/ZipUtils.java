@@ -144,15 +144,15 @@ public final class ZipUtils {
         return null;
     }
 
-    public static boolean exists(String sourcee, String[] strList) {
-        if (sourcee == null) {
+    public static boolean exists(String source, String[] strList) {
+        if (source == null) {
             return false;
         }
         if (strList == null || strList.length == 0) {
             return false;
         }
         for (String str : strList) {
-            if (str != null && str.equalsIgnoreCase(sourcee)) {
+            if (str != null && str.equalsIgnoreCase(source)) {
                 return true;
             }
         }
@@ -191,14 +191,6 @@ public final class ZipUtils {
         }
     }
 
-    /**
-     * @deprecated use zipFolder instead.
-     */
-    @Deprecated
-    public static void ZipFolderExample(String sourceFolderPath, String zipFilePath) {
-        zipFolder(sourceFolderPath, zipFilePath);
-    }
-
     public static void zipFiles(Collection<File> sourceFiles, String zipFilePath) {
         if (sourceFiles == null || sourceFiles.isEmpty()) {
             return;
@@ -234,7 +226,7 @@ public final class ZipUtils {
             return;
         }
         for (File file : files) {
-            String entryName = (isNotBlank(parentFolderName) ? parentFolderName + "/" : "") + file.getName();
+            String entryName = (StringUtils.isNotBlank(parentFolderName) ? parentFolderName + "/" : "") + file.getName();
             if (file.isDirectory()) {
                 addFolderToZip(file, entryName, zos);
                 continue;
@@ -313,7 +305,4 @@ public final class ZipUtils {
         return new ArrayList<>(names);
     }
 
-    private static boolean isNotBlank(String value) {
-        return value != null && !value.trim().isEmpty();
-    }
 }

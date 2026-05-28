@@ -2,26 +2,26 @@ package com.zippyboot.kit.okhttp;
 
 import okhttp3.Headers;
 
-public final class HttpResult {
+public final class HttpResponse {
 
     private final int statusCode;
     private final Headers headers;
     private final String body;
     private final String errorMessage;
 
-    private HttpResult(int statusCode, Headers headers, String body, String errorMessage) {
+    private HttpResponse(int statusCode, Headers headers, String body, String errorMessage) {
         this.statusCode = statusCode;
         this.headers = headers;
         this.body = body;
         this.errorMessage = errorMessage;
     }
 
-    public static HttpResult success(int statusCode, Headers headers, String body) {
-        return new HttpResult(statusCode, headers, body, null);
+    public static HttpResponse success(int statusCode, Headers headers, String body) {
+        return new HttpResponse(statusCode, headers, body, null);
     }
 
-    public static HttpResult failure(String errorMessage) {
-        return new HttpResult(-1, null, null, errorMessage);
+    public static HttpResponse failure(String errorMessage) {
+        return new HttpResponse(-1, null, null, errorMessage);
     }
 
     public int getStatusCode() {
@@ -42,5 +42,13 @@ public final class HttpResult {
 
     public boolean isSuccessful() {
         return errorMessage == null && statusCode >= 200 && statusCode < 300;
+    }
+
+    @Override
+    public String toString() {
+        if (errorMessage != null) {
+            return "HttpResponse{error=" + errorMessage + "}";
+        }
+        return "HttpResponse{status=" + statusCode + ", body=" + (body != null ? body.length() + " chars" : "null") + "}";
     }
 }

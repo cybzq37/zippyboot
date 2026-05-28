@@ -3,7 +3,6 @@ package com.zippyboot.kit.util;
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
 
-import java.lang.management.ManagementFactory;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -143,34 +142,16 @@ public class DateUtils {
     }
 
     /**
-     * 获取服务器启动时间
+     * 计算两个时间的差值，返回格式化的中文描述。
      */
-    public static Date getServerStartDate() {
-        long time = ManagementFactory.getRuntimeMXBean().getStartTime();
-        return new Date(time);
-    }
-
-    /**
-     * 计算两个时间差
-     */
-    public static String getDatePoor(Date endDate, Date nowDate) {
-        if (endDate == null || nowDate == null) {
+    public static String formatDuration(Date endDate, Date startDate) {
+        if (endDate == null || startDate == null) {
             return "0天0小时0分钟";
         }
-        long nd = 1000 * 24 * 60 * 60;
-        long nh = 1000 * 60 * 60;
-        long nm = 1000 * 60;
-        // long ns = 1000;
-        // 获得两个时间的毫秒时间差异
-        long diff = endDate.getTime() - nowDate.getTime();
-        // 计算差多少天
-        long day = diff / nd;
-        // 计算差多少小时
-        long hour = diff % nd / nh;
-        // 计算差多少分钟
-        long min = diff % nd % nh / nm;
-        // 计算差多少秒//输出结果
-        // long sec = diff % nd % nh % nm / ns;
+        long diff = endDate.getTime() - startDate.getTime();
+        long day = diff / (1000 * 60 * 60 * 24);
+        long hour = diff % (1000 * 60 * 60 * 24) / (1000 * 60 * 60);
+        long min = diff % (1000 * 60 * 60) / (1000 * 60);
         return day + "天" + hour + "小时" + min + "分钟";
     }
 

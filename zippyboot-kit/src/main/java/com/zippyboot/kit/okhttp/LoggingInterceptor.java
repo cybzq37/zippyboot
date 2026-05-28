@@ -17,11 +17,13 @@ import java.nio.charset.StandardCharsets;
 import java.util.concurrent.TimeUnit;
 
 /**
- * okhttp 拦截器
+ * OkHttp 请求/响应日志拦截器。
+ * <p>
+ * 仅在 DEBUG 级别启用时生效，自动截断过大的请求/响应体。
  */
-public class HttpLogInterceptor implements Interceptor {
+public class LoggingInterceptor implements Interceptor {
 
-    private static final Logger log = LoggerFactory.getLogger(HttpLogInterceptor.class);
+    private static final Logger log = LoggerFactory.getLogger(LoggingInterceptor.class);
 
     private static final Charset UTF8 = StandardCharsets.UTF_8;
     private static final long FULL_BODY_LOG_MAX_BYTES = 2048;

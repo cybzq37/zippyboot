@@ -22,7 +22,7 @@ public final class IdUtils {
 
     private static final AtomicLong SERIAL = new AtomicLong(0);
 
-    private static volatile LocalDate serialDate = LocalDate.now();
+    private static volatile long serialDay = LocalDate.now().toEpochDay();
 
     private static final DateTimeFormatter DAY_FMT = DateTimeFormatter.ofPattern("yyyyMMdd");
 
@@ -132,10 +132,11 @@ public final class IdUtils {
         }
 
         LocalDate today = LocalDate.now();
-        if (!today.equals(serialDate)) {
+        long todayEpoch = today.toEpochDay();
+        if (todayEpoch != serialDay) {
             synchronized (IdUtils.class) {
-                if (!today.equals(serialDate)) {
-                    serialDate = today;
+                if (todayEpoch != serialDay) {
+                    serialDay = todayEpoch;
                     SERIAL.set(0);
                 }
             }
