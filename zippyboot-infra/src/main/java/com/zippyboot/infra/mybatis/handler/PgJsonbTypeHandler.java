@@ -32,7 +32,7 @@ import java.sql.SQLException;
  */
 @MappedTypes({Object.class})
 @MappedJdbcTypes(JdbcType.VARCHAR)
-public class JsonbTypeHandler<T> extends BaseTypeHandler<T> {
+public class PgJsonbTypeHandler<T> extends BaseTypeHandler<T> {
 
     protected final Log log = LogFactory.getLog(this.getClass());
 
@@ -43,13 +43,13 @@ public class JsonbTypeHandler<T> extends BaseTypeHandler<T> {
 
     private static ObjectMapper OBJECT_MAPPER = new ObjectMapper();
 
-    public JsonbTypeHandler(Class<?> clazz) {
+    public PgJsonbTypeHandler(Class<?> clazz) {
         this.type = clazz;
         Assert.notNull(type, "Type argument cannot be null");
     }
 
     /** 自 3.5.6 版本开始支持泛型，需要加上此构造。 */
-    public JsonbTypeHandler(Class<?> type, Field field) {
+    public PgJsonbTypeHandler(Class<?> type, Field field) {
         this(type);
         this.genericType = field.getGenericType();
     }

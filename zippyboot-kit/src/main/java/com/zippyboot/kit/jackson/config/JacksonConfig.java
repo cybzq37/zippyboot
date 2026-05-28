@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.ser.std.ToStringSerializer;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.fasterxml.jackson.datatype.jsr310.deser.LocalDateTimeDeserializer;
 import com.fasterxml.jackson.datatype.jsr310.ser.LocalDateTimeSerializer;
+import com.zippyboot.kit.jackson.module.IEnumModule;
 import com.zippyboot.kit.jackson.serializer.BigNumberSerializer;
 import com.zippyboot.kit.jackson.serializer.SensitiveServiceHolder;
 import com.zippyboot.kit.jackson.plugins.sensitive.SensitiveService;
@@ -36,7 +37,7 @@ public class JacksonConfig {
             javaTimeModule.addSerializer(BigInteger.class, BigNumberSerializer.INSTANCE);
             javaTimeModule.addSerializer(BigDecimal.class, ToStringSerializer.instance);
 
-            builder.modules(javaTimeModule);
+            builder.modules(javaTimeModule, new IEnumModule());
             builder.featuresToDisable(MapperFeature.DEFAULT_VIEW_INCLUSION);
         };
     }

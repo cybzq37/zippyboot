@@ -4,3 +4,4 @@ target/
 *.iml
 *.log
 .DS_Store
+zippyboot-app/logs/zippyboot-app/app-2026-05-27-1.log.gz
