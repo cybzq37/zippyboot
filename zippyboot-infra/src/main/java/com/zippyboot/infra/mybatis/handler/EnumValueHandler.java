@@ -18,59 +18,50 @@ import java.sql.SQLException;
  *   <li>写入时：自动取 {@link IEnum#getCode()} 存入数据库</li>
  *   <li>读取时：遍历枚举常量，按 code 值匹配还原</li>
  * </ul>
- * 使用方式（在实体类字段上指定具体枚举类型）：
+ * 使用方式（在实体类字段上指定）：
  * <pre>
  * &#64;TableField(typeHandler = EnumValueHandler.class)
- * private Status status;
+ * private Gender gender;
  * </pre>
  * 或在 XML resultMap 中指定：
  * <pre>
- * &lt;result column="status" property="status"
- *         typeHandler="com.zippyboot.infra.mybatis.handler.EnumValueHandler.of(Status.class)"/&gt;
+ * &lt;result column="gender" property="gender"
+ *         typeHandler="com.zippyboot.infra.mybatis.handler.EnumValueHandler"/&gt;
  * </pre>
  */
-public class EnumValueHandler {
+public class EnumValueHandler extends BaseTypeHandler<IEnum> {
 
-    /**
-     * 创建指定枚举类型的类型安全处理器。
-     */
-    public static <E extends Enum<E> & IEnum<?>> BaseTypeHandler<E> of(Class<E> enumType) {
-        return new TypedEnumValueHandler<>(enumType);
+    private final Class<?> enumType;
+
+    public EnumValueHandler(Class<?> type) {
+        this.enumType = type;
     }
 
-    private static class TypedEnumValueHandler<E extends Enum<E> & IEnum<?>> extends BaseTypeHandler<E> {
+    @Override
+    public void setNonNullParameter(PreparedStatement ps, int i, IEnum parameter, JdbcType jdbcType) throws SQLException {
+        ps.setObject(i, parameter.getCode());
+    }
 
-        private final Class<E> enumType;
+    @Override
+    public IEnum getNullableResult(ResultSet rs, String columnName) throws SQLException {
+        Object value = rs.getObject(columnName);
+        return value == null ? null : matchEnum(value);
+    }
 
-        TypedEnumValueHandler(Class<E> enumType) {
-            this.enumType = enumType;
-        }
+    @Override
+    public IEnum getNullableResult(ResultSet rs, int columnIndex) throws SQLException {
+        Object value = rs.getObject(columnIndex);
+        return value == null ? null : matchEnum(value);
+    }
 
-        @Override
-        public void setNonNullParameter(PreparedStatement ps, int i, E parameter, JdbcType jdbcType) throws SQLException {
-            ps.setObject(i, parameter.getCode());
-        }
+    @Override
+    public IEnum getNullableResult(CallableStatement cs, int columnIndex) throws SQLException {
+        Object value = cs.getObject(columnIndex);
+        return value == null ? null : matchEnum(value);
+    }
 
-        @Override
-        public E getNullableResult(ResultSet rs, String columnName) throws SQLException {
-            Object value = rs.getObject(columnName);
-            return value == null ? null : matchEnum(value);
-        }
-
-        @Override
-        public E getNullableResult(ResultSet rs, int columnIndex) throws SQLException {
-            Object value = rs.getObject(columnIndex);
-            return value == null ? null : matchEnum(value);
-        }
-
-        @Override
-        public E getNullableResult(CallableStatement cs, int columnIndex) throws SQLException {
-            Object value = cs.getObject(columnIndex);
-            return value == null ? null : matchEnum(value);
-        }
-
-        private E matchEnum(Object dbValue) {
-            return IEnum.ofCode(enumType, dbValue);
-        }
+    @SuppressWarnings({"unchecked", "rawtypes"})
+    private IEnum matchEnum(Object dbValue) {
+        return (IEnum) IEnum.ofCode((Class) enumType, dbValue);
     }
 }
