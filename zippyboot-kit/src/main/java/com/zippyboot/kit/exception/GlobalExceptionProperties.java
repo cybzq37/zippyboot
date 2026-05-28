@@ -8,9 +8,6 @@ public class GlobalExceptionProperties {
     private boolean enabled = true;
     private boolean includeStackTrace = false;
     private boolean logWarnForBusiness = false;
-    private boolean wrapSuccessResponse = true;
-    private String successCode = "KIT-200";
-    private String successMessage = "OK";
 
     public boolean isEnabled() {
         return enabled;
@@ -34,29 +31,5 @@ public class GlobalExceptionProperties {
 
     public void setLogWarnForBusiness(boolean logWarnForBusiness) {
         this.logWarnForBusiness = logWarnForBusiness;
-    }
-
-    public boolean isWrapSuccessResponse() {
-        return wrapSuccessResponse;
-    }
-
-    public void setWrapSuccessResponse(boolean wrapSuccessResponse) {
-        this.wrapSuccessResponse = wrapSuccessResponse;
-    }
-
-    public String getSuccessCode() {
-        return successCode;
-    }
-
-    public void setSuccessCode(String successCode) {
-        this.successCode = successCode;
-    }
-
-    public String getSuccessMessage() {
-        return successMessage;
-    }
-
-    public void setSuccessMessage(String successMessage) {
-        this.successMessage = successMessage;
     }
 }

@@ -8,8 +8,8 @@ import java.util.List;
 public class BaseException extends RuntimeException {
 
     private static final long serialVersionUID = 1L;
-    public static final String BAD_REQUEST_CODE = "KIT-400";
-    public static final String INTERNAL_ERROR_CODE = "KIT-500";
+    public static final String BAD_REQUEST_CODE = "400";
+    public static final String INTERNAL_ERROR_CODE = "500";
     private static final String DEFAULT_BAD_REQUEST_MESSAGE = "Bad request";
     private static final String DEFAULT_INTERNAL_ERROR_MESSAGE = "Internal server error";
 

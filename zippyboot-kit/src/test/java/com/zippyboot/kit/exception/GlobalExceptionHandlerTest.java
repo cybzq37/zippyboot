@@ -1,6 +1,7 @@
 package com.zippyboot.kit.exception;
 
 import org.junit.jupiter.api.Test;
+import org.springframework.mock.http.MockHttpInputMessage;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
@@ -47,7 +48,10 @@ class GlobalExceptionHandlerTest {
 
     @Test
     void shouldUseStableMessageForUnreadableRequestBody() {
-        ResponseEntity<ErrorResponse> response = handler.handleBadRequest(new HttpMessageNotReadableException("JSON parse error"), request("/users"));
+        ResponseEntity<ErrorResponse> response = handler.handleBadRequest(
+                new HttpMessageNotReadableException("JSON parse error", new MockHttpInputMessage(new byte[0])),
+                request("/users")
+        );
 
         assertThat(response.getStatusCode().value()).isEqualTo(400);
         assertThat(response.getBody()).isNotNull();

@@ -1,5 +1,6 @@
-package com.zippyboot.kit.exception;
+package com.zippyboot.kit.response;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -9,13 +10,13 @@ import org.springframework.context.annotation.Bean;
 
 @AutoConfiguration
 @ConditionalOnWebApplication(type = ConditionalOnWebApplication.Type.SERVLET)
-@EnableConfigurationProperties(GlobalExceptionProperties.class)
-@ConditionalOnProperty(prefix = "zippyboot.kit.exception", name = "enabled", havingValue = "true", matchIfMissing = true)
-public class GlobalExceptionAutoConfiguration {
+@EnableConfigurationProperties(ResponseProperties.class)
+@ConditionalOnProperty(prefix = "zippyboot.kit.response", name = "enabled", havingValue = "true", matchIfMissing = true)
+public class ResponseAutoConfiguration {
 
     @Bean
     @ConditionalOnMissingBean
-    public GlobalExceptionHandler globalExceptionHandler(GlobalExceptionProperties properties) {
-        return new GlobalExceptionHandler(properties);
+    public GlobalResponseBodyAdvice globalResponseBodyAdvice(ResponseProperties properties, ObjectMapper objectMapper) {
+        return new GlobalResponseBodyAdvice(properties, objectMapper);
     }
 }

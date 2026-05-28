@@ -2,22 +2,33 @@ package com.zippyboot.kit.response;
 
 import java.time.Instant;
 
-public class ApiResponse<T> {
+public final class ApiResponse<T> {
 
-    private String code;
-    private String message;
-    private Instant timestamp;
-    private String path;
-    private T data;
+    public static final String DEFAULT_SUCCESS_CODE = "0";
+    public static final String DEFAULT_SUCCESS_MESSAGE = "OK";
+
+    private final String code;
+    private final String message;
+    private final Instant timestamp;
+    private final String path;
+    private final T data;
+
+    private ApiResponse(String code, String message, Instant timestamp, String path, T data) {
+        this.code = code;
+        this.message = message;
+        this.timestamp = timestamp;
+        this.path = path == null ? "" : path;
+        this.data = data;
+    }
 
     public static <T> ApiResponse<T> success(String code, String message, String path, T data) {
-        ApiResponse<T> response = new ApiResponse<>();
-        response.code = code;
-        response.message = message;
-        response.path = path;
-        response.data = data;
-        response.timestamp = Instant.now();
-        return response;
+        return new ApiResponse<>(
+                normalizeCode(code),
+                normalizeMessage(message),
+                Instant.now(),
+                path,
+                data
+        );
     }
 
     public String getCode() {
@@ -38,5 +49,13 @@ public class ApiResponse<T> {
 
     public T getData() {
         return data;
+    }
+
+    private static String normalizeCode(String code) {
+        return code == null || code.isBlank() ? DEFAULT_SUCCESS_CODE : code;
+    }
+
+    private static String normalizeMessage(String message) {
+        return message == null || message.isBlank() ? DEFAULT_SUCCESS_MESSAGE : message;
     }
 }

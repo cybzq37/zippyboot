@@ -4,11 +4,13 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.zippyboot.kit.exception.BaseException;
 import com.zippyboot.kit.exception.ErrorResponse;
-import com.zippyboot.kit.exception.GlobalExceptionProperties;
+import org.springframework.core.annotation.AnnotatedElementUtils;
 import org.springframework.core.MethodParameter;
+import org.springframework.core.Ordered;
 import org.springframework.core.io.Resource;
+import org.springframework.core.annotation.Order;
+import org.springframework.http.HttpEntity;
 import org.springframework.http.MediaType;
-import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageConverter;
 import org.springframework.http.server.ServerHttpRequest;
 import org.springframework.http.server.ServerHttpResponse;
@@ -18,26 +20,26 @@ import org.springframework.web.servlet.mvc.method.annotation.ResponseBodyAdvice;
 import org.springframework.web.servlet.mvc.method.annotation.StreamingResponseBody;
 
 @RestControllerAdvice
+@Order(Ordered.LOWEST_PRECEDENCE)
 public class GlobalResponseBodyAdvice implements ResponseBodyAdvice<Object> {
 
-    private final GlobalExceptionProperties properties;
+    private final ResponseProperties properties;
     private final ObjectMapper objectMapper;
 
-    public GlobalResponseBodyAdvice(GlobalExceptionProperties properties, ObjectMapper objectMapper) {
+    public GlobalResponseBodyAdvice(ResponseProperties properties, ObjectMapper objectMapper) {
         this.properties = properties;
         this.objectMapper = objectMapper;
     }
 
     @Override
     public boolean supports(MethodParameter returnType, Class<? extends HttpMessageConverter<?>> converterType) {
-        if (!properties.isWrapSuccessResponse()) {
+        if (!properties.isEnabled()) {
             return false;
         }
-        if (returnType.hasMethodAnnotation(IgnoreResponseWrap.class)) {
+        if (hasIgnoreResponseWrap(returnType)) {
             return false;
         }
-        Class<?> declaringClass = returnType.getContainingClass();
-        return !declaringClass.isAnnotationPresent(IgnoreResponseWrap.class);
+        return !isPassthroughReturnType(returnType.getParameterType());
     }
 
     @Override
@@ -53,12 +55,13 @@ public class GlobalResponseBodyAdvice implements ResponseBodyAdvice<Object> {
         if (body instanceof ApiResponse<?> || body instanceof ErrorResponse) {
             return body;
         }
-        if (body instanceof ResponseEntity<?> || body instanceof Resource || body instanceof byte[] || body instanceof StreamingResponseBody) {
+        if (body instanceof Resource || body instanceof byte[] || body instanceof StreamingResponseBody) {
             return body;
         }
 
         Object wrapped = wrap(body, request);
         if (body instanceof String) {
+            response.getHeaders().setContentType(MediaType.APPLICATION_JSON);
             try {
                 return objectMapper.writeValueAsString(wrapped);
             } catch (JsonProcessingException e) {
@@ -83,5 +86,20 @@ public class GlobalResponseBodyAdvice implements ResponseBodyAdvice<Object> {
             return servletRequest.getServletRequest().getRequestURI();
         }
         return request.getURI() == null ? "" : request.getURI().getPath();
+    }
+
+    private boolean hasIgnoreResponseWrap(MethodParameter returnType) {
+        if (returnType.getMethod() != null
+                && AnnotatedElementUtils.hasAnnotation(returnType.getMethod(), IgnoreResponseWrap.class)) {
+            return true;
+        }
+        return AnnotatedElementUtils.hasAnnotation(returnType.getContainingClass(), IgnoreResponseWrap.class);
+    }
+
+    private boolean isPassthroughReturnType(Class<?> returnType) {
+        return HttpEntity.class.isAssignableFrom(returnType)
+                || Resource.class.isAssignableFrom(returnType)
+                || byte[].class.equals(returnType)
+                || StreamingResponseBody.class.isAssignableFrom(returnType);
     }
 }

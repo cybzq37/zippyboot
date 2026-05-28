@@ -3,10 +3,12 @@ package com.zippyboot.kit.response;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.zippyboot.kit.exception.BaseException;
-import com.zippyboot.kit.exception.GlobalExceptionProperties;
+import com.zippyboot.kit.exception.ErrorResponse;
 import org.junit.jupiter.api.Test;
 import org.springframework.core.MethodParameter;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.StringHttpMessageConverter;
 import org.springframework.http.server.ServletServerHttpRequest;
 import org.springframework.http.server.ServletServerHttpResponse;
@@ -18,11 +20,14 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 class GlobalResponseBodyAdviceTest {
 
+    private final ResponseProperties properties = new ResponseProperties();
+    private final GlobalResponseBodyAdvice advice = new GlobalResponseBodyAdvice(properties, new ObjectMapper());
+
     @Test
     void shouldRaiseBaseExceptionWhenStringWrappingSerializationFails() throws NoSuchMethodException {
-        GlobalExceptionProperties properties = new GlobalExceptionProperties();
         GlobalResponseBodyAdvice advice = new GlobalResponseBodyAdvice(properties, failingObjectMapper());
         MethodParameter returnType = new MethodParameter(TestController.class.getDeclaredMethod("text"), -1);
+        ServletServerHttpResponse response = new ServletServerHttpResponse(new MockHttpServletResponse());
 
         assertThatThrownBy(() -> advice.beforeBodyWrite(
                 "payload",
@@ -30,7 +35,7 @@ class GlobalResponseBodyAdviceTest {
                 MediaType.TEXT_PLAIN,
                 StringHttpMessageConverter.class,
                 new ServletServerHttpRequest(new MockHttpServletRequest("GET", "/demo")),
-                new ServletServerHttpResponse(new MockHttpServletResponse())
+                response
         ))
                 .isInstanceOf(BaseException.class)
                 .satisfies(throwable -> {
@@ -38,6 +43,55 @@ class GlobalResponseBodyAdviceTest {
                     assertThat(exception.getStatus().value()).isEqualTo(500);
                     assertThat(exception.getCode()).isEqualTo(BaseException.INTERNAL_ERROR_CODE);
                 });
+
+        assertThat(response.getHeaders().getContentType()).isEqualTo(MediaType.APPLICATION_JSON);
+    }
+
+    @Test
+    void shouldNotWrapResponseEntityReturnType() throws NoSuchMethodException {
+        MethodParameter returnType = new MethodParameter(TestController.class.getDeclaredMethod("entity"), -1);
+
+        boolean supports = advice.supports(returnType, StringHttpMessageConverter.class);
+
+        assertThat(supports).isFalse();
+    }
+
+    @Test
+    void shouldKeepExistingWrappedBodiesUntouched() throws NoSuchMethodException {
+        MethodParameter returnType = new MethodParameter(TestController.class.getDeclaredMethod("text"), -1);
+        ApiResponse<String> apiResponse = ApiResponse.success("0", "OK", "/demo", "payload");
+        ErrorResponse errorResponse = ErrorResponse.of("400", "Bad request", "/demo", null);
+
+        Object wrappedApi = advice.beforeBodyWrite(
+                apiResponse,
+                returnType,
+                MediaType.APPLICATION_JSON,
+                StringHttpMessageConverter.class,
+                new ServletServerHttpRequest(new MockHttpServletRequest("GET", "/demo")),
+                new ServletServerHttpResponse(new MockHttpServletResponse())
+        );
+        Object wrappedError = advice.beforeBodyWrite(
+                errorResponse,
+                returnType,
+                MediaType.APPLICATION_JSON,
+                StringHttpMessageConverter.class,
+                new ServletServerHttpRequest(new MockHttpServletRequest("GET", "/demo")),
+                new ServletServerHttpResponse(new MockHttpServletResponse())
+        );
+
+        assertThat(wrappedApi).isSameAs(apiResponse);
+        assertThat(wrappedError).isSameAs(errorResponse);
+    }
+
+    @Test
+    void shouldFallbackToDefaultSuccessValuesWhenPropertiesBlank() {
+        properties.setSuccessCode(" ");
+        properties.setSuccessMessage("");
+
+        ApiResponse<Object> response = ApiResponse.success(properties.getSuccessCode(), properties.getSuccessMessage(), "/demo", null);
+
+        assertThat(response.getCode()).isEqualTo(ApiResponse.DEFAULT_SUCCESS_CODE);
+        assertThat(response.getMessage()).isEqualTo(ApiResponse.DEFAULT_SUCCESS_MESSAGE);
     }
 
     private static ObjectMapper failingObjectMapper() {
@@ -54,6 +108,10 @@ class GlobalResponseBodyAdviceTest {
 
         public String text() {
             return "ok";
+        }
+
+        public ResponseEntity<String> entity() {
+            return ResponseEntity.status(HttpStatus.CREATED).body("ok");
         }
     }
 }
