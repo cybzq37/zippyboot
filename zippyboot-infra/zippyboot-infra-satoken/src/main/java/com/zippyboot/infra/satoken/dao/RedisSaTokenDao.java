@@ -2,7 +2,7 @@ package com.zippyboot.infra.satoken.dao;
 
 import cn.dev33.satoken.dao.SaTokenDao;
 import cn.dev33.satoken.util.SaFoxUtil;
-import com.zippyboot.infra.redis.RedisTemplate;
+import com.zippyboot.infra.redis.RedisClient;
 
 import java.time.Duration;
 import java.util.ArrayList;
@@ -12,15 +12,15 @@ import java.util.Set;
 /**
  * Sa-Token Redis 持久层实现
  * <p>
- * 基于 infra 模块的 RedisTemplate 实现，统一 Redis 操作入口
+ * 基于 infra 模块的 RedisClient 实现，统一 Redis 操作入口
  *
  * @author lichunqing
  */
 public class RedisSaTokenDao implements SaTokenDao {
 
-    private final RedisTemplate redisTemplate;
+    private final RedisClient redisTemplate;
 
-    public RedisSaTokenDao(RedisTemplate redisTemplate) {
+    public RedisSaTokenDao(RedisClient redisTemplate) {
         this.redisTemplate = redisTemplate;
     }
 

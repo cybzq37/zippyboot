@@ -12,7 +12,7 @@ public class ElasticsearchAutoConfiguration {
 
     @Bean
     @ConditionalOnMissingBean
-    public ElasticsearchTemplate elasticsearchTemplate(ElasticsearchOperations operations) {
-        return new ElasticsearchTemplate(operations);
+    public EsClient elasticsearchTemplate(ElasticsearchOperations operations) {
+        return new EsClient(operations);
     }
 }

@@ -50,26 +50,24 @@ public class GlobalResponseBodyAdvice implements ResponseBodyAdvice<Object> {
                                   Class<? extends HttpMessageConverter<?>> selectedConverterType,
                                   ServerHttpRequest request,
                                   ServerHttpResponse response) {
-        if (body == null) {
-            return wrap(null, request);
-        }
-        if (body instanceof ApiResponse<?> || body instanceof ErrorResponse) {
-            return body;
-        }
-        if (body instanceof Resource || body instanceof byte[] || body instanceof StreamingResponseBody) {
-            return body;
-        }
-
-        Object wrapped = wrap(body, request);
+        // String 返回值由 StringHttpMessageConverter 处理，需手动序列化为 JSON
+        // 其他类型由 MappingJackson2HttpMessageConverter 处理，直接返回包装对象即可
         if (body instanceof String) {
             response.getHeaders().setContentType(MediaType.APPLICATION_JSON);
             try {
-                return objectMapper.writeValueAsString(wrapped);
+                return objectMapper.writeValueAsString(wrap(body, request));
             } catch (JsonProcessingException e) {
                 throw BaseException.internalError("Serialize wrapped string response failed", e);
             }
         }
-        return wrapped;
+
+        if (body instanceof ApiResponse<?> || body instanceof ErrorResponse) {
+            return body;
+        }
+        if (body == null || body instanceof Resource || body instanceof byte[] || body instanceof StreamingResponseBody) {
+            return body == null ? wrap(null, request) : body;
+        }
+        return wrap(body, request);
     }
 
     private ApiResponse<Object> wrap(Object body, ServerHttpRequest request) {

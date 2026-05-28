@@ -3,7 +3,7 @@ package com.zippyboot.infra.satoken.config;
 import cn.dev33.satoken.dao.SaTokenDao;
 import cn.dev33.satoken.stp.StpInterface;
 import cn.dev33.satoken.stp.StpLogic;
-import com.zippyboot.infra.redis.RedisTemplate;
+import com.zippyboot.infra.redis.RedisClient;
 import com.zippyboot.infra.satoken.dao.RedisSaTokenDao;
 import com.zippyboot.infra.satoken.service.SaPermissionImpl;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
@@ -40,9 +40,9 @@ public class SaTokenConfig {
     }
 
     @Bean
-    @ConditionalOnBean(RedisTemplate.class)
+    @ConditionalOnBean(RedisClient.class)
     @ConditionalOnMissingBean(SaTokenDao.class)
-    public SaTokenDao saTokenDao(RedisTemplate redisTemplate) {
+    public SaTokenDao saTokenDao(RedisClient redisTemplate) {
         return new RedisSaTokenDao(redisTemplate);
     }
 }

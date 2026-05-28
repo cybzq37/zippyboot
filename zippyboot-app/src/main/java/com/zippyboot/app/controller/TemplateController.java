@@ -2,9 +2,9 @@ package com.zippyboot.app.controller;
 
 import cn.dev33.satoken.stp.StpUtil;
 import com.zippyboot.api.dto.HealthDto;
-import com.zippyboot.infra.es.ElasticsearchTemplate;
-import com.zippyboot.infra.kafka.KafkaProducerTemplate;
-import com.zippyboot.infra.redis.RedisTemplate;
+import com.zippyboot.infra.es.EsClient;
+import com.zippyboot.infra.kafka.KafkaClient;
+import com.zippyboot.infra.redis.RedisClient;
 import com.zippyboot.infra.satoken.config.SaTokenProperties;
 import com.zippyboot.kit.response.ApiResponse;
 import lombok.RequiredArgsConstructor;
@@ -29,9 +29,9 @@ public class TemplateController {
 
     private static final String DEMO_KAFKA_TOPIC = "zippyboot.demo.topic";
 
-    private final ObjectProvider<RedisTemplate> redisTemplate;
-    private final ObjectProvider<KafkaProducerTemplate> kafkaProducerTemplate;
-    private final ObjectProvider<ElasticsearchTemplate> elasticsearchTemplate;
+    private final ObjectProvider<RedisClient> redisTemplate;
+    private final ObjectProvider<KafkaClient> kafkaClient;
+    private final ObjectProvider<EsClient> elasticsearchTemplate;
     private final ObjectProvider<SaTokenProperties> saTokenProperties;
 
     @GetMapping("/ping")
@@ -55,7 +55,7 @@ public class TemplateController {
     public ApiResponse<Map<String, Object>> infraCheck() {
         Map<String, Object> payload = new HashMap<>();
         payload.put("redis", redisTemplate.getIfAvailable() != null);
-        payload.put("kafka", kafkaProducerTemplate.getIfAvailable() != null);
+        payload.put("kafka", kafkaClient.getIfAvailable() != null);
         payload.put("es", elasticsearchTemplate.getIfAvailable() != null);
         payload.put("satoken", saTokenProperties.getIfAvailable() != null);
         return ApiResponse.ok(payload);
@@ -66,13 +66,13 @@ public class TemplateController {
             @RequestParam(defaultValue = DEMO_KAFKA_TOPIC) String topic,
             @RequestParam String message,
             @RequestParam(defaultValue = "demo-key") String key) {
-        KafkaProducerTemplate producerTemplate = kafkaProducerTemplate.getIfAvailable();
-        if (producerTemplate == null) {
-            return ApiResponse.fail("KafkaProducerTemplate is not available. Check spring.kafka configuration.");
+        KafkaClient client = kafkaClient.getIfAvailable();
+        if (client == null) {
+            return ApiResponse.fail("KafkaClient is not available. Check spring.kafka configuration.");
         }
 
         String traceId = UUID.randomUUID().toString();
-        producerTemplate.send(MessageBuilder.withPayload(message)
+        client.getOperations().send(MessageBuilder.withPayload(message)
                 .setHeader(KafkaHeaders.TOPIC, topic)
                 .setHeader(KafkaHeaders.KEY, key)
                 .setHeader("traceId", traceId)

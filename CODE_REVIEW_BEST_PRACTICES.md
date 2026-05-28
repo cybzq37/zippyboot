@@ -16,16 +16,16 @@
 | 4 | 架构 | `GlobalThreadPool` 静态全局单例，core/max/queue 硬编码，无法按业务配置 | ~~改为 Builder + 懒加载~~ **已完成** -- `getExecutor()` 懒加载开箱即用，`configure(new Builder().coreSize(4).maxSize(16))` 自定义配置，不绑定 Spring | ~~中~~ |
 | 5 | 包结构 | Sa-Token 下用 `utils`，MyBatis 下用 `util`，命名不一致 | 统一为 `util` | 低 |
 | 6 | 包结构 | `@Xss` 是 Bean Validation 注解却放在 `jackson.plugins.xss` 下，名不副实 | 移到 `com.zippyboot.kit.validation` 包下 | 低 |
-| 7 | 包结构 | ES 子模块没有 `config` 包，`ElasticsearchTemplate` 直接放在根包，与其他子模块模式不一致 | 补充 `config` 子包或统一模式 | 低 |
-| 8 | 命名 | `com.zippyboot.infra.redis.RedisTemplate` 与 `org.springframework.data.redis.core.RedisTemplate` 同名，内部和使用者都容易混淆 | 重命名为 `RedisHelper` 或 `ZippyRedisTemplate` | 高 |
+| 7 | 包结构 | ES 子模块没有 `config` 包，`ElasticsearchTemplate` 直接放在根包，与其他子模块模式不一致 | ~~重命名为 `EsClient`~~ **已完成** | ~~低~~ |
+| 8 | 命名 | `com.zippyboot.infra.redis.RedisTemplate` 与 `org.springframework.data.redis.core.RedisTemplate` 同名，内部和使用者都容易混淆 | ~~重命名为 `RedisClient`~~ **已完成** | ~~高~~ |
 | 9 | 命名 | `BaseException` 的 `code`(String) 与 `status`(HttpStatusCode) 语义重叠，`ApiResponse` 的 `code` 含义又不同 | `BaseException.code` 改为 `bizCode`，与 HTTP status 区分 | 中 |
-| 10 | 命名 | `ApiResponse.fail()` 硬编码 code 为 `"-1"`，与 success 的 `"0"` 风格不一致 | `fail()` 接受 code 参数，或定义有意义的常量 | 低 |
+| 10 | 命名 | `ApiResponse.fail()` 硬编码 code 为 `"-1"`，与 success 的 `"0"` 风格不一致 | ~~改为 `DEFAULT_FAIL_CODE = "9999"`~~ **已完成** | ~~低~~ |
 | 11 | 代码 | `HttpTemplate` 保留已废弃的 `getInstance()` 双重检查锁单例，SNAPSHOT 阶段应直接移除 | 删除 `getInstance()` 及相关静态字段 | 中 |
-| 12 | 代码 | `RedisTemplate` 的 Object 操作方法每个都有相同的 `objectRedisTemplate == null` 检查 | 提取 `requireObjectTemplate()` 私有方法减少重复 | 低 |
-| 13 | 代码 | `KafkaProducerTemplate` 每个方法都纯委托给 `KafkaOperations`，无附加逻辑 | 增加统一异常转换/日志/重试，或移除直接注入 `KafkaOperations` | 中 |
-| 14 | 代码 | `ElasticsearchTemplate` 纯委托 `ElasticsearchOperations`，仅 `toPage()` 有增量价值 | 增加统一异常处理/日志，或移除让业务层直接使用 `ElasticsearchOperations` | 中 |
-| 15 | 代码 | `GlobalResponseBodyAdvice` 对 String 返回值手动 `ObjectMapper` 序列化，绕过 Spring 消息转换器链 | 文档化说明行为，或建议 Controller 使用 `@IgnoreResponseWrap` | 低 |
-| 16 | 代码 | `GeoFormatUtils` 使用 `ThreadLocal<WKTReader/WKTWriter>` 但无清理机制，Web 容器线程复用可能导致内存泄漏 | 改用对象池或每次新建实例 | 中 |
+| 12 | 代码 | `RedisClient` 的 Object 操作方法每个都有相同的 `objectRedisTemplate == null` 检查 | ~~提取 `requireObjectTemplate()` 私有方法减少重复~~ **已完成** | ~~低~~ |
+| 13 | 代码 | `KafkaProducerTemplate` 每个方法都纯委托给 `KafkaOperations`，无附加逻辑 | ~~精简为 `KafkaClient`，持有 `KafkaOperations` 的薄封装~~ **已完成** | ~~中~~ |
+| 14 | 代码 | `EsClient` 纯委托 `ElasticsearchOperations`，仅 `toPage()` 有增量价值 | ~~精简为持有 `ElasticsearchOperations` 的薄封装，只保留 `page`/`searchPage` 等增值方法~~ **已完成** | ~~中~~ |
+| 15 | 代码 | `GlobalResponseBodyAdvice` 对 String 返回值手动 `ObjectMapper` 序列化，绕过 Spring 消息转换器链 | ~~优化：String 类型前置处理，注释说明原因，合并冗余判断~~ **已完成** | ~~低~~ |
+| 16 | 代码 | `GeoFormatUtils` 使用 `ThreadLocal<WKTReader/WKTWriter>` 但无清理机制，Web 容器线程复用可能导致内存泄漏 | ~~改为每次新建实例，移除 ThreadLocal~~ **已完成** | ~~中~~ |
 | 17 | 代码 | Storage 异常继承树不一致，`StorageInvalidKeyException` 继承 `IllegalArgumentException` 而非 `StorageException` | 统一继承关系，或明确文档化设计意图 | 低 |
 | 18 | 测试 | infra 的 redis/kafka/es/satoken 子模块完全没有测试 | 优先补充 `RedisTemplate`（分布式锁 Lua 脚本）和 `LoginHelper`（缓存逻辑）测试 | 高 |
 | 19 | 测试 | kit 的 DateUtils/IdUtils/StringUtils/BeanUtils/ZipUtils/TreeUtils/HttpTemplate 缺少测试 | 补充 `IdUtils` Snowflake、`DateUtils` 多格式解析、`StringUtils` 边界情况测试 | 中 |
@@ -46,7 +46,7 @@
 5. ~~kit 的 `spring-webmvc` 改为 optional~~ **已完成** -- Web 基础设施类移入 `zippyboot-infra-web`
 6. ~~`GlobalThreadPool` 配置化~~ **已完成** -- 支持系统属性 + `init()` 编程配置
 7. 移除 `HttpTemplate.getInstance()` 废弃方法
-8. `KafkaProducerTemplate` / `ElasticsearchTemplate` 要么增加附加价值要么移除
+8. ~~`KafkaProducerTemplate` / `ElasticsearchTemplate` 要么增加附加价值要么移除~~ **已完成** -- 精简为 `KafkaClient` / `EsClient`
 9. `BaseException.code` 语义澄清
 10. `GeoFormatUtils` ThreadLocal 清理
 11. 补充 kit 工具类测试

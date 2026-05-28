@@ -26,18 +26,16 @@ public final class GeoFormatUtils {
 
     private static final GeometryFactory GEOMETRY_FACTORY = new GeometryFactory();
     private static final GeometryJSON GEOMETRY_JSON = new GeometryJSON();
-    private static final ThreadLocal<WKTReader> WKT_READER = ThreadLocal.withInitial(WKTReader::new);
-    private static final ThreadLocal<WKTWriter> WKT_WRITER = ThreadLocal.withInitial(WKTWriter::new);
 
     private GeoFormatUtils() {
     }
 
     public static String geometryToWkt(Geometry geometry) {
-        return WKT_WRITER.get().write(geometry);
+        return new WKTWriter().write(geometry);
     }
 
     public static Geometry wktToGeometry(String wkt) throws Exception {
-        return WKT_READER.get().read(wkt);
+        return new WKTReader().read(wkt);
     }
 
     public static String geometryToGeoJson(Geometry geometry) throws IOException {

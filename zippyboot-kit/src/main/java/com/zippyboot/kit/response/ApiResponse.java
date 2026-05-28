@@ -5,6 +5,7 @@ import java.time.Instant;
 public final class ApiResponse<T> {
 
     public static final String DEFAULT_SUCCESS_CODE = "0";
+    public static final String DEFAULT_FAIL_CODE = "9999";
     public static final String DEFAULT_SUCCESS_MESSAGE = "OK";
 
     private final String code;
@@ -36,7 +37,7 @@ public final class ApiResponse<T> {
     }
 
     public static <T> ApiResponse<T> fail(String message) {
-        return new ApiResponse<>("-1", message, Instant.now(), null, null);
+        return new ApiResponse<>(DEFAULT_FAIL_CODE, message, Instant.now(), null, null);
     }
 
     public String getCode() {
