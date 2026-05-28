@@ -1,5 +1,6 @@
 package com.zippyboot.infra.mybatis.handler;
 
+import com.baomidou.mybatisplus.core.toolkit.Assert;
 import com.fasterxml.jackson.core.JacksonException;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JavaType;
@@ -12,7 +13,6 @@ import org.apache.ibatis.type.JdbcType;
 import org.apache.ibatis.type.MappedJdbcTypes;
 import org.apache.ibatis.type.MappedTypes;
 import org.postgresql.util.PGobject;
-import org.springframework.util.Assert;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.Type;
@@ -22,34 +22,33 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 
 /**
- * Jackson 实现 JSONB 字段类型处理器
+ * PostgreSQL JSONB 字段类型处理器。
+ * <p>
+ * 使用 Jackson 将 Java 对象与 PostgreSQL {@code jsonb} 列相互映射，
+ * 写入时通过 {@link org.postgresql.util.PGobject} 设置类型为 {@code jsonb}。
+ * <p>
+ * 通过 {@link #setObjectMapper(ObjectMapper)} 可注入 Spring 容器中的 ObjectMapper，
+ * 由 {@link com.zippyboot.infra.mybatis.config.MybatisAutoConfiguration} 自动完成。
  */
 @MappedTypes({Object.class})
 @MappedJdbcTypes(JdbcType.VARCHAR)
 public class JsonbTypeHandler<T> extends BaseTypeHandler<T> {
 
-
     protected final Log log = LogFactory.getLog(this.getClass());
 
     protected final Class<?> type;
 
-    /**
-     * @since 3.5.6
-     */
+    /** @since 3.5.6 */
     protected Type genericType;
 
     private static ObjectMapper OBJECT_MAPPER = new ObjectMapper();
 
-
     public JsonbTypeHandler(Class<?> clazz) {
         this.type = clazz;
-        if (log.isTraceEnabled()) {
-            log.trace(this.getClass().getSimpleName() + "(" + type + ")");
-        }
         Assert.notNull(type, "Type argument cannot be null");
     }
 
-    // 自3.5.6版本开始支持泛型,需要加上此构造.
+    /** 自 3.5.6 版本开始支持泛型，需要加上此构造。 */
     public JsonbTypeHandler(Class<?> type, Field field) {
         this(type);
         this.genericType = field.getGenericType();
@@ -65,20 +64,20 @@ public class JsonbTypeHandler<T> extends BaseTypeHandler<T> {
 
     @Override
     public T getNullableResult(ResultSet rs, String columnName) throws SQLException {
-        final String json = rs.getString(columnName);
-        return isBlank(json) ? null : parse(json);
+        String json = rs.getString(columnName);
+        return json == null || json.isBlank() ? null : parse(json);
     }
 
     @Override
     public T getNullableResult(ResultSet rs, int columnIndex) throws SQLException {
-        final String json = rs.getString(columnIndex);
-        return isBlank(json) ? null : parse(json);
+        String json = rs.getString(columnIndex);
+        return json == null || json.isBlank() ? null : parse(json);
     }
 
     @Override
     public T getNullableResult(CallableStatement cs, int columnIndex) throws SQLException {
-        final String json = cs.getString(columnIndex);
-        return isBlank(json) ? null : parse(json);
+        String json = cs.getString(columnIndex);
+        return json == null || json.isBlank() ? null : parse(json);
     }
 
     public Type getFieldType() {
@@ -92,17 +91,16 @@ public class JsonbTypeHandler<T> extends BaseTypeHandler<T> {
         try {
             return objectMapper.readValue(json, javaType);
         } catch (JacksonException e) {
-            log.error("deserialize json: " + json + " to " + javaType + " error ", e);
+            log.error("deserialize json: " + json + " to " + javaType + " error", e);
             throw new RuntimeException(e);
         }
     }
-
 
     public String toJson(Object obj) {
         try {
             return getObjectMapper().writeValueAsString(obj);
         } catch (JsonProcessingException e) {
-            log.error("serialize " + obj + " to json error ", e);
+            log.error("serialize " + obj + " to json error", e);
             throw new RuntimeException(e);
         }
     }
@@ -115,9 +113,4 @@ public class JsonbTypeHandler<T> extends BaseTypeHandler<T> {
         Assert.notNull(objectMapper, "ObjectMapper should not be null");
         OBJECT_MAPPER = objectMapper;
     }
-
-    private boolean isBlank(String value) {
-        return value == null || value.trim().isEmpty();
-    }
-
 }

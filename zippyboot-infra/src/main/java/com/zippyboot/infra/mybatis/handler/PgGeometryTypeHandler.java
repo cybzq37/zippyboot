@@ -1,6 +1,5 @@
 package com.zippyboot.infra.mybatis.handler;
 
-import lombok.extern.slf4j.Slf4j;
 import org.apache.ibatis.type.BaseTypeHandler;
 import org.apache.ibatis.type.JdbcType;
 import org.apache.ibatis.type.MappedTypes;
@@ -11,9 +10,14 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 
-@Slf4j
+/**
+ * PostgreSQL geometry 字段类型处理器。
+ * <p>
+ * 将 Java {@link String}（WKT/EWKT 格式）与 PostgreSQL {@code geometry} 列相互映射，
+ * 写入时通过 {@link org.postgresql.util.PGobject} 设置类型为 {@code geometry}。
+ */
 @MappedTypes(value = {String.class})
-public class GeometryTypeHandler extends BaseTypeHandler<String> {
+public class PgGeometryTypeHandler extends BaseTypeHandler<String> {
 
     @Override
     public void setNonNullParameter(PreparedStatement ps, int i, String parameter, JdbcType jdbcType) throws SQLException {
@@ -26,22 +30,18 @@ public class GeometryTypeHandler extends BaseTypeHandler<String> {
     @Override
     public String getNullableResult(ResultSet rs, String columnName) throws SQLException {
         String value = rs.getString(columnName);
-        return isBlank(value) ? null : value;
+        return value == null || value.isBlank() ? null : value;
     }
 
     @Override
     public String getNullableResult(ResultSet rs, int columnIndex) throws SQLException {
         String value = rs.getString(columnIndex);
-        return isBlank(value) ? null : value;
+        return value == null || value.isBlank() ? null : value;
     }
 
     @Override
     public String getNullableResult(CallableStatement cs, int columnIndex) throws SQLException {
         String value = cs.getString(columnIndex);
-        return isBlank(value) ? null : value;
-    }
-
-    private boolean isBlank(String value) {
-        return value == null || value.trim().isEmpty();
+        return value == null || value.isBlank() ? null : value;
     }
 }

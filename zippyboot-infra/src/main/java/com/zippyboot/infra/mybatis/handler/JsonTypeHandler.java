@@ -16,21 +16,25 @@ import java.sql.PreparedStatement;
 import java.sql.SQLException;
 
 /**
- * Jackson 实现 JSONB 字段类型处理器
+ * JSON 字段类型处理器（VARCHAR 存储）。
+ * <p>
+ * 使用 Jackson 将 Java 对象与数据库 {@code varchar}/{@code text} 列中存储的 JSON 字符串相互映射。
+ * 适用于数据库不支持原生 JSON 类型、或以文本方式存储 JSON 的场景。
+ * <p>
+ * 通过 {@link #setObjectMapper(ObjectMapper)} 可注入 Spring 容器中的 ObjectMapper，
+ * 由 {@link com.zippyboot.infra.mybatis.config.MybatisAutoConfiguration} 自动完成。
  */
 @MappedTypes({Object.class})
 @MappedJdbcTypes(JdbcType.VARCHAR)
 public class JsonTypeHandler<T> extends AbstractJsonTypeHandler<T> {
 
-
     private static ObjectMapper OBJECT_MAPPER = new ObjectMapper();
-
 
     public JsonTypeHandler(Class<T> clazz) {
         super(clazz);
     }
 
-    // 自3.5.6版本开始支持泛型,需要加上此构造.
+    /** 自 3.5.6 版本开始支持泛型，需要加上此构造。 */
     public JsonTypeHandler(Class<?> type, Field field, Class<T> clazz) {
         super(type, field);
     }
@@ -48,7 +52,7 @@ public class JsonTypeHandler<T> extends AbstractJsonTypeHandler<T> {
         try {
             return objectMapper.readValue(json, javaType);
         } catch (JacksonException e) {
-            log.error("deserialize json: " + json + " to " + javaType + " error ", e);
+            log.error("deserialize json: " + json + " to " + javaType + " error", e);
             throw new RuntimeException(e);
         }
     }
@@ -57,12 +61,9 @@ public class JsonTypeHandler<T> extends AbstractJsonTypeHandler<T> {
     public String toJson(Object obj) {
         try {
             String str = getObjectMapper().writeValueAsString(obj);
-            if ("null".equals(str)) {
-                return null;
-            }
-            return str;
+            return "null".equals(str) ? null : str;
         } catch (JsonProcessingException e) {
-            log.error("serialize " + obj + " to json error ", e);
+            log.error("serialize " + obj + " to json error", e);
             throw new RuntimeException(e);
         }
     }
@@ -75,5 +76,4 @@ public class JsonTypeHandler<T> extends AbstractJsonTypeHandler<T> {
         Assert.notNull(objectMapper, "ObjectMapper should not be null");
         OBJECT_MAPPER = objectMapper;
     }
-
 }
