@@ -1,7 +1,11 @@
 package com.zippyboot.kit.okhttp;
 
+import lombok.Getter;
+import lombok.Setter;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
+@Getter
+@Setter
 @ConfigurationProperties(prefix = "zippyboot.kit.okhttp")
 public class HttpClientProperties {
 
@@ -46,52 +50,4 @@ public class HttpClientProperties {
 
     /** 是否启用 OkHttp 请求日志拦截器。 */
     private boolean enableLogInterceptor = false;
-
-    public long getConnectTimeoutSeconds() {
-        return connectTimeoutSeconds;
-    }
-
-    public void setConnectTimeoutSeconds(long connectTimeoutSeconds) {
-        this.connectTimeoutSeconds = connectTimeoutSeconds;
-    }
-
-    public long getReadTimeoutSeconds() {
-        return readTimeoutSeconds;
-    }
-
-    public void setReadTimeoutSeconds(long readTimeoutSeconds) {
-        this.readTimeoutSeconds = readTimeoutSeconds;
-    }
-
-    public long getWriteTimeoutSeconds() {
-        return writeTimeoutSeconds;
-    }
-
-    public void setWriteTimeoutSeconds(long writeTimeoutSeconds) {
-        this.writeTimeoutSeconds = writeTimeoutSeconds;
-    }
-
-    public long getCallTimeoutSeconds() {
-        return callTimeoutSeconds;
-    }
-
-    public void setCallTimeoutSeconds(long callTimeoutSeconds) {
-        this.callTimeoutSeconds = callTimeoutSeconds;
-    }
-
-    public boolean isThrowOnHttpError() {
-        return throwOnHttpError;
-    }
-
-    public void setThrowOnHttpError(boolean throwOnHttpError) {
-        this.throwOnHttpError = throwOnHttpError;
-    }
-
-    public boolean isEnableLogInterceptor() {
-        return enableLogInterceptor;
-    }
-
-    public void setEnableLogInterceptor(boolean enableLogInterceptor) {
-        this.enableLogInterceptor = enableLogInterceptor;
-    }
 }
