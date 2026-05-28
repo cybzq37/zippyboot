@@ -5,59 +5,76 @@ import cn.dev33.satoken.context.model.SaStorage;
 import cn.dev33.satoken.session.SaSession;
 import cn.dev33.satoken.stp.SaLoginModel;
 import cn.dev33.satoken.stp.StpUtil;
-import lombok.extern.slf4j.Slf4j;
+import com.zippyboot.infra.satoken.config.SaTokenProperties;
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 
 /**
  * 登录鉴权助手
  * <p>
- * user_type 为 用户类型 同一个用户表 可以有多种用户类型 例如 pc,app
- * deivce 为 设备类型 同一个用户类型 可以有 多种设备类型 例如 web,ios
- * 可以组成 用户类型与设备类型多对多的 权限灵活控制
- * <p>
- * 多用户体系 针对 多种用户类型 但权限控制不一致
- * 可以组成 多用户类型表与多设备类型 分别控制权限
+ * 支持多用户体系和多设备类型：
+ * <ul>
+ *   <li>userType - 用户类型（如：pc、app）</li>
+ *   <li>device - 设备类型（如：web、ios）</li>
+ * </ul>
  *
  * @author lichunqing
  */
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 @Slf4j
-public class LoginHelper {
+public final class LoginHelper {
 
-    public static final String LOGIN_USER_KEY = "loginUser";
-    public static final String USER_KEY = "userId";
+    private static final String LOGIN_USER_KEY = "loginUser";
+    private static final String USER_ID_KEY = "userId";
+
+    private static SaTokenProperties properties;
+
+    @Autowired
+    public void setProperties(SaTokenProperties properties) {
+        LoginHelper.properties = properties;
+    }
 
     /**
-     * 登录系统（通用）
+     * 用户登录
+     *
+     * @param loginId   登录ID
+     * @param userId    用户ID
+     * @param loginUser 登录用户对象
      */
     public static void login(Object loginId, Long userId, Object loginUser) {
         loginByDevice(loginId, userId, loginUser, null);
     }
 
     /**
-     * 登录系统 基于 设备类型
-     * 针对相同用户体系不同设备
+     * 用户登录（指定设备类型）
+     *
+     * @param loginId   登录ID
+     * @param userId    用户ID
+     * @param loginUser 登录用户对象
+     * @param device    设备类型
      */
     public static void loginByDevice(Object loginId, Long userId, Object loginUser, String device) {
         if (loginId == null) {
             throw new IllegalArgumentException("loginId must not be null");
         }
+
         SaStorage storage = SaHolder.getStorage();
         storage.set(LOGIN_USER_KEY, loginUser);
-        storage.set(USER_KEY, userId);
+        storage.set(USER_ID_KEY, userId);
+
         SaLoginModel model = new SaLoginModel();
-        if (device != null && !device.trim().isEmpty()) {
+        if (device != null && !device.isBlank()) {
             model.setDevice(device);
         }
-        // 自定义分配, 不设置默认走全局 yml 配置
-        // model.setTimeout(86400).setActiveTimeout(1800);
-        StpUtil.login(loginId, model.setExtra(USER_KEY, userId));
+
+        StpUtil.login(loginId, model.setExtra(USER_ID_KEY, userId));
         StpUtil.getTokenSession().set(LOGIN_USER_KEY, loginUser);
     }
 
     /**
-     * 获取用户(多级缓存)
+     * 获取当前登录用户（多级缓存：Request -> TokenSession）
      */
     @SuppressWarnings("unchecked")
     public static <T> T getLoginUser() {
@@ -65,42 +82,59 @@ public class LoginHelper {
         if (loginUser != null) {
             return loginUser;
         }
+
         SaSession session = StpUtil.getTokenSession();
         if (session == null) {
             return null;
         }
+
         loginUser = (T) session.get(LOGIN_USER_KEY);
         SaHolder.getStorage().set(LOGIN_USER_KEY, loginUser);
         return loginUser;
     }
 
     /**
-     * 获取用户基于token
+     * 根据 Token 获取登录用户
      */
     @SuppressWarnings("unchecked")
     public static <T> T getLoginUser(String token) {
         SaSession session = StpUtil.getTokenSessionByToken(token);
-        if (session == null) {
-            return null;
-        }
-        return (T) session.get(LOGIN_USER_KEY);
+        return session == null ? null : (T) session.get(LOGIN_USER_KEY);
     }
 
     /**
-     * 获取用户id
+     * 获取当前用户ID
      */
     public static Long getUserId() {
-        Object userIdObj;
-        try {
-            userIdObj = SaHolder.getStorage().get(USER_KEY);
-            if (userIdObj == null) {
-                userIdObj = StpUtil.getExtra(USER_KEY);
-                SaHolder.getStorage().set(USER_KEY, userIdObj);
+        Object userId = SaHolder.getStorage().get(USER_ID_KEY);
+        if (userId == null) {
+            try {
+                userId = StpUtil.getExtra(USER_ID_KEY);
+                SaHolder.getStorage().set(USER_ID_KEY, userId);
+            } catch (Exception e) {
+                log.warn("Failed to get userId from token extra", e);
+                return null;
             }
-        } catch (Exception e) {
-            log.warn("get userId failed", e);
-            return null;
         }
+        return parseUserId(userId);
+    }
+
+    /**
+     * 判断是否为超级管理员
+     */
+    public static boolean isRoot(Long userId) {
+        return userId != null && properties != null
+                && userId.equals(properties.getRootUserId());
+    }
+
+    /**
+     * 判断当前用户是否为超级管理员
+     */
+    public static boolean isRoot() {
+        return isRoot(getUserId());
+    }
+
+    private static Long parseUserId(Object userIdObj) {
         if (userIdObj == null) {
             return null;
         }
@@ -113,19 +147,4 @@ public class LoginHelper {
             return null;
         }
     }
-
-    /**
-     * 是否为管理员
-     *
-     * @param userId 用户ID
-     * @return 结果
-     */
-    public static boolean isRoot(Long userId) {
-        return userId != null && userId == 1L;
-    }
-
-    public static boolean isRoot() {
-        return isRoot(getUserId());
-    }
-
 }

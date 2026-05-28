@@ -6,39 +6,27 @@ import java.util.Collections;
 import java.util.List;
 
 /**
- * sa-token 权限管理实现类
+ * Sa-Token 权限接口默认实现
+ * <p>
+ * 提供空实现作为占位符，业务模块应覆盖此实现以提供实际权限逻辑
  *
  * @author lichunqing
  */
 public class SaPermissionImpl implements StpInterface {
 
     /**
-     * 获取菜单权限列表
+     * 获取权限列表
      */
     @Override
     public List<String> getPermissionList(Object loginId, String loginType) {
-//        LoginUser loginUser = LoginHelper.getLoginUser();
-//        UserType userType = UserType.getUserType(loginUser.getUserType());
-//        if (userType == UserType.SYS_USER) {
-//            return new ArrayList<>(loginUser.getResources());
-//        } else if (userType == UserType.APP_USER) {
-//            // 其他端 自行根据业务编写
-//        }
         return Collections.emptyList();
     }
 
     /**
-     * 获取角色权限列表
+     * 获取角色列表
      */
     @Override
     public List<String> getRoleList(Object loginId, String loginType) {
-//        LoginUser loginUser = LoginHelper.getLoginUser();
-//        UserType userType = UserType.getUserType(loginUser.getUserType());
-//        if (userType == UserType.SYS_USER) {
-//            return new ArrayList<>(loginUser.getRoles());
-//        } else if (userType == UserType.APP_USER) {
-//            // 其他端 自行根据业务编写
-//        }
         return Collections.emptyList();
     }
 }

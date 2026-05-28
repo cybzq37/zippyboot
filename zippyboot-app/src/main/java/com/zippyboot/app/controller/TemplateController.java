@@ -5,7 +5,7 @@ import com.zippyboot.api.dto.HealthDto;
 import com.zippyboot.infra.es.ElasticsearchTemplate;
 import com.zippyboot.infra.kafka.KafkaProducerTemplate;
 import com.zippyboot.infra.redis.RedisTemplate;
-import com.zippyboot.infra.satoken.service.SaTokenService;
+import com.zippyboot.infra.satoken.config.SaTokenProperties;
 import com.zippyboot.model.ApiResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.ObjectProvider;
@@ -32,7 +32,7 @@ public class TemplateController {
     private final ObjectProvider<RedisTemplate> redisTemplate;
     private final ObjectProvider<KafkaProducerTemplate> kafkaProducerTemplate;
     private final ObjectProvider<ElasticsearchTemplate> elasticsearchTemplate;
-    private final ObjectProvider<SaTokenService> saTokenService;
+    private final ObjectProvider<SaTokenProperties> saTokenProperties;
 
     @GetMapping("/ping")
     public ApiResponse<HealthDto> ping() {
@@ -57,7 +57,7 @@ public class TemplateController {
         payload.put("redis", redisTemplate.getIfAvailable() != null);
         payload.put("kafka", kafkaProducerTemplate.getIfAvailable() != null);
         payload.put("es", elasticsearchTemplate.getIfAvailable() != null);
-        payload.put("satoken", saTokenService.getIfAvailable() != null);
+        payload.put("satoken", saTokenProperties.getIfAvailable() != null);
         return ApiResponse.ok(payload);
     }
 
