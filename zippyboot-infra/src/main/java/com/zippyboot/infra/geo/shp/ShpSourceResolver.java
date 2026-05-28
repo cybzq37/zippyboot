@@ -4,9 +4,11 @@ import com.zippyboot.kit.util.ZipUtils;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.FileVisitResult;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.Comparator;
+import java.nio.file.SimpleFileVisitor;
+import java.nio.file.attribute.BasicFileAttributes;
 import java.util.List;
 import java.util.Locale;
 import java.util.stream.Stream;
@@ -101,11 +103,24 @@ final class ShpSourceResolver {
         if (directory == null || !Files.exists(directory)) {
             return;
         }
-        try (Stream<Path> walk = Files.walk(directory)) {
-            walk.sorted(Comparator.reverseOrder()).forEach(path -> {
-                try {
-                    Files.deleteIfExists(path);
-                } catch (IOException ignored) {
+        try {
+            Files.walkFileTree(directory, new SimpleFileVisitor<>() {
+                @Override
+                public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) {
+                    try {
+                        Files.deleteIfExists(file);
+                    } catch (IOException ignored) {
+                    }
+                    return FileVisitResult.CONTINUE;
+                }
+
+                @Override
+                public FileVisitResult postVisitDirectory(Path dir, IOException exc) {
+                    try {
+                        Files.deleteIfExists(dir);
+                    } catch (IOException ignored) {
+                    }
+                    return FileVisitResult.CONTINUE;
                 }
             });
         } catch (IOException ignored) {

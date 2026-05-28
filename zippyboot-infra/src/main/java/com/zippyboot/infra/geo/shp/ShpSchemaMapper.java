@@ -55,20 +55,21 @@ final class ShpSchemaMapper {
         return new ShpFeatureData(id, attributes, geometryData);
     }
 
+    private static final int MAX_NAME_DEDUP_RETRIES = 9999;
+
     private static String resolveUniqueName(String baseName, Set<String> usedNames) {
         String candidate = (baseName == null || baseName.isBlank()) ? "field" : baseName;
         if (usedNames.add(candidate)) {
             return candidate;
         }
 
-        int suffix = 2;
-        while (true) {
+        for (int suffix = 2; suffix <= MAX_NAME_DEDUP_RETRIES; suffix++) {
             String resolved = appendSuffix(candidate, suffix);
             if (usedNames.add(resolved)) {
                 return resolved;
             }
-            suffix++;
         }
+        throw new IllegalStateException("Failed to resolve unique field name for: " + baseName);
     }
 
     private static String appendSuffix(String baseName, int suffix) {

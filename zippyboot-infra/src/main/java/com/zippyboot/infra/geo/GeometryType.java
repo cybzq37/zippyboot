@@ -4,9 +4,11 @@ import java.util.Locale;
 
 public enum GeometryType {
     POINT,
+    MULTIPOINT,
     LINESTRING,
     MULTILINESTRING,
-    POLYGON;
+    POLYGON,
+    MULTIPOLYGON;
 
     public static GeometryType from(String value) {
         if (value == null || value.isBlank()) {

@@ -10,10 +10,15 @@ import org.geotools.data.shapefile.ShapefileDataStore;
 import org.geotools.data.shapefile.ShapefileDataStoreFactory;
 import org.locationtech.jts.geom.Geometry;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.io.File;
 import java.io.IOException;
 import java.io.Serializable;
 import java.nio.file.Path;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -24,13 +29,17 @@ import java.util.Set;
 
 public final class ShpWriter {
 
+    private static final Logger log = LoggerFactory.getLogger(ShpWriter.class);
     private static final int DBF_FIELD_NAME_LIMIT = 10;
+    private static final int MAX_FIELD_NAME_DEDUP_RETRIES = 9999;
+    private static final int TYPE_INFERENCE_SAMPLE_SIZE = 100;
     private static final String[] SHAPEFILE_EXTENSIONS = {".shp", ".shx", ".dbf", ".prj", ".fix", ".qix", ".cpg"};
+    private static final String[] DBF_DATE_FORMATS = {"yyyy-MM-dd", "yyyy/MM/dd", "yyyyMMdd", "dd-MM-yyyy", "dd/MM/yyyy"};
 
     private ShpWriter() {
     }
 
-    public static ShpWriteResult write(String shpPath, ShpSchema schema, List<ShpFeatureData> features) throws Exception {
+    public static ShpWriteResult write(String shpPath, ShpSchema schema, List<ShpFeatureData> features) throws IOException {
         return write(shpPath, schema, features, ShpWriteOptions.defaults());
     }
 
@@ -39,7 +48,7 @@ public final class ShpWriter {
             ShpSchema schema,
             List<ShpFeatureData> features,
             ShpWriteOptions options
-    ) throws Exception {
+    ) throws IOException {
         if (schema == null) {
             throw new IllegalArgumentException("schema must not be null");
         }
@@ -53,9 +62,10 @@ public final class ShpWriter {
 
         String typeName = resolveTypeName(shpFile.toPath(), schema, writeOptions);
         List<ResolvedField> resolvedFields = resolveFields(schema, features);
-        ShpGeometryResolver.ResolvedGeometry resolvedGeometry =
-                ShpGeometryResolver.resolveDefinition(features, writeOptions.geometryType());
-        Integer srid = ShpGeometryResolver.resolveSrid(features, writeOptions.srid());
+        ShpGeometryResolver.ResolvedWriteContext writeContext =
+                ShpGeometryResolver.resolveForWrite(features, writeOptions.geometryType(), writeOptions.srid());
+        ShpGeometryResolver.ResolvedGeometry resolvedGeometry = writeContext.resolvedGeometry();
+        Integer srid = writeContext.srid();
         SimpleFeatureType featureType = buildFeatureType(typeName, resolvedFields, resolvedGeometry.binding(), writeOptions, srid);
 
         ShapefileDataStoreFactory factory = new ShapefileDataStoreFactory();
@@ -70,11 +80,15 @@ public final class ShpWriter {
             dataStore.createSchema(featureType);
             actualTypeName = dataStore.getTypeNames()[0];
             if (srid != null) {
-                dataStore.forceSchemaCRS(GeoCrsUtils.decode("EPSG:" + srid));
+                try {
+                    dataStore.forceSchemaCRS(GeoCrsUtils.decode("EPSG:" + srid));
+                } catch (Exception e) {
+                    throw new IOException("Failed to decode CRS: EPSG:" + srid, e);
+                }
             }
 
             try (FeatureWriter<SimpleFeatureType, SimpleFeature> writer =
-                         dataStore.getFeatureWriterAppend(dataStore.getTypeNames()[0], Transaction.AUTO_COMMIT)) {
+                         dataStore.getFeatureWriterAppend(actualTypeName, Transaction.AUTO_COMMIT)) {
                 for (ShpFeatureData feature : features) {
                     SimpleFeature target = writer.next();
                     target.setAttribute(writeOptions.geometryFieldName(),
@@ -86,6 +100,9 @@ public final class ShpWriter {
                     writer.write();
                 }
             }
+        } catch (RuntimeException | IOException exception) {
+            cleanupPartialFiles(shpFile);
+            throw exception;
         } finally {
             dataStore.dispose();
         }
@@ -108,7 +125,7 @@ public final class ShpWriter {
 
     private static void prepareTarget(File shpFile, boolean overwrite) throws IOException {
         File parent = shpFile.getAbsoluteFile().getParentFile();
-        if (parent != null && !parent.exists() && !parent.mkdirs()) {
+        if (parent != null && !parent.exists() && !parent.mkdirs() && !parent.exists()) {
             throw new IOException("Failed to create directory: " + parent.getAbsolutePath());
         }
 
@@ -128,11 +145,21 @@ public final class ShpWriter {
         }
     }
 
+    private static void cleanupPartialFiles(File shpFile) {
+        String basePath = stripExtension(shpFile.getAbsolutePath());
+        for (String extension : SHAPEFILE_EXTENSIONS) {
+            File candidate = new File(basePath + extension);
+            if (candidate.exists()) {
+                candidate.delete();
+            }
+        }
+    }
+
     private static String resolveTypeName(Path shpPath, ShpSchema schema, ShpWriteOptions options) {
         if (options.typeName() != null && !options.typeName().isBlank()) {
             return options.typeName();
         }
-        if (schema != null && schema.typeName() != null && !schema.typeName().isBlank()) {
+        if (schema.typeName() != null && !schema.typeName().isBlank()) {
             return schema.typeName();
         }
         String fileName = shpPath.getFileName().toString();
@@ -154,8 +181,9 @@ public final class ShpWriter {
     private static Class<?> resolveFieldType(ShpFieldMeta field, List<ShpFeatureData> features) {
         Class<?> binding = field.valueType();
         if (binding == null || Object.class.equals(binding)) {
-            for (ShpFeatureData feature : features) {
-                Object value = feature.attributes().get(field.normalizedName());
+            int limit = Math.min(features.size(), TYPE_INFERENCE_SAMPLE_SIZE);
+            for (int i = 0; i < limit; i++) {
+                Object value = features.get(i).attributes().get(field.normalizedName());
                 if (value != null) {
                     binding = value.getClass();
                     break;
@@ -249,7 +277,27 @@ public final class ShpWriter {
         if (Boolean.class.equals(targetType)) {
             return value instanceof Boolean ? value : Boolean.parseBoolean(value.toString());
         }
+        if (java.util.Date.class.equals(targetType)) {
+            return parseDate(value);
+        }
         return value;
+    }
+
+    private static java.util.Date parseDate(Object value) {
+        if (value instanceof java.util.Date date) {
+            return date;
+        }
+        if (value instanceof Number number) {
+            return new java.util.Date(number.longValue());
+        }
+        String text = value.toString().trim();
+        for (String format : DBF_DATE_FORMATS) {
+            try {
+                return new SimpleDateFormat(format).parse(text);
+            } catch (ParseException ignored) {
+            }
+        }
+        throw new IllegalArgumentException("Cannot parse date value: " + value);
     }
 
     private static String resolveDbfFieldName(String sourceName, Set<String> usedFieldNames) {
@@ -259,16 +307,15 @@ public final class ShpWriter {
             return candidate;
         }
 
-        int suffix = 2;
-        while (true) {
+        for (int suffix = 2; suffix <= MAX_FIELD_NAME_DEDUP_RETRIES; suffix++) {
             String suffixText = String.valueOf(suffix);
             int prefixLength = Math.max(1, DBF_FIELD_NAME_LIMIT - suffixText.length());
             String resolved = truncate(sanitized, prefixLength) + suffixText;
             if (usedFieldNames.add(resolved)) {
                 return resolved;
             }
-            suffix++;
         }
+        throw new IllegalStateException("Failed to resolve unique DBF field name for: " + sourceName);
     }
 
     private static String sanitizeFieldName(String sourceName) {
@@ -285,7 +332,10 @@ public final class ShpWriter {
         }
 
         if (builder.isEmpty()) {
+            log.warn("DBF field name '{}' contains no valid ASCII characters, using default name 'field'", sourceName);
             builder.append("field");
+        } else if (builder.length() < sourceName.length()) {
+            log.debug("DBF field name sanitized: '{}' -> '{}' (non-ASCII characters removed)", sourceName, builder);
         }
         if (Character.isDigit(builder.charAt(0))) {
             builder.insert(0, 'f');

@@ -6,6 +6,10 @@ import org.locationtech.jts.geom.Geometry;
 import org.locationtech.jts.geom.GeometryFactory;
 import org.locationtech.jts.geom.LinearRing;
 import org.locationtech.jts.geom.LineString;
+import org.locationtech.jts.geom.MultiPoint;
+import org.locationtech.jts.geom.MultiPolygon;
+import org.locationtech.jts.geom.Point;
+import org.locationtech.jts.geom.Polygon;
 import org.locationtech.jts.io.WKTReader;
 import org.locationtech.jts.io.WKTWriter;
 import org.locationtech.jts.operation.linemerge.LineMerger;
@@ -22,18 +26,18 @@ public final class GeoFormatUtils {
 
     private static final GeometryFactory GEOMETRY_FACTORY = new GeometryFactory();
     private static final GeometryJSON GEOMETRY_JSON = new GeometryJSON();
-    private static final WKTReader WKT_READER = new WKTReader();
-    private static final WKTWriter WKT_WRITER = new WKTWriter();
+    private static final ThreadLocal<WKTReader> WKT_READER = ThreadLocal.withInitial(WKTReader::new);
+    private static final ThreadLocal<WKTWriter> WKT_WRITER = ThreadLocal.withInitial(WKTWriter::new);
 
     private GeoFormatUtils() {
     }
 
     public static String geometryToWkt(Geometry geometry) {
-        return WKT_WRITER.write(geometry);
+        return WKT_WRITER.get().write(geometry);
     }
 
     public static Geometry wktToGeometry(String wkt) throws Exception {
-        return WKT_READER.read(wkt);
+        return WKT_READER.get().read(wkt);
     }
 
     public static String geometryToGeoJson(Geometry geometry) throws IOException {
@@ -59,7 +63,7 @@ public final class GeoFormatUtils {
             throw new IllegalArgumentException("geometry must not be null");
         }
         if (geometry instanceof LineString lineString) {
-            return (LineString) lineString.copy();
+            return lineString;
         }
         if (!"MultiLineString".equalsIgnoreCase(geometry.getGeometryType())) {
             throw new IllegalArgumentException("geometry must be LineString or MultiLineString");
@@ -71,19 +75,22 @@ public final class GeoFormatUtils {
         if (mergedLines.size() != 1) {
             throw new IllegalArgumentException("MultiLineString cannot be merged into a single LineString");
         }
-        return (LineString) ((LineString) mergedLines.iterator().next()).copy();
+        return (LineString) mergedLines.iterator().next();
     }
 
     public static String geometryToCsv(Geometry geometry) {
         if (geometry == null) {
             throw new IllegalArgumentException("geometry must not be null");
         }
-        if ("MultiLineString".equalsIgnoreCase(geometry.getGeometryType())) {
-            List<String> lines = new ArrayList<>(geometry.getNumGeometries());
+        String geometryType = geometry.getGeometryType();
+        if ("MultiLineString".equalsIgnoreCase(geometryType)
+                || "MultiPoint".equalsIgnoreCase(geometryType)
+                || "MultiPolygon".equalsIgnoreCase(geometryType)) {
+            List<String> parts = new ArrayList<>(geometry.getNumGeometries());
             for (int i = 0; i < geometry.getNumGeometries(); i++) {
-                lines.add(coordinatesToCsv(geometry.getGeometryN(i).getCoordinates()));
+                parts.add(coordinatesToCsv(geometry.getGeometryN(i).getCoordinates()));
             }
-            return String.join("|", lines);
+            return String.join("|", parts);
         }
 
         return coordinatesToCsv(geometry.getCoordinates());
@@ -105,9 +112,11 @@ public final class GeoFormatUtils {
         GeometryType resolvedType = geometryType == null ? GeometryType.POINT : geometryType;
         return switch (resolvedType) {
             case POINT -> createPoint(csv);
+            case MULTIPOINT -> createMultiPoint(csv);
             case LINESTRING -> createLineString(csv);
             case MULTILINESTRING -> createMultiLineString(csv);
             case POLYGON -> createPolygon(parseRequiredCoordinates(csv));
+            case MULTIPOLYGON -> createMultiPolygon(csv);
         };
     }
 
@@ -194,5 +203,45 @@ public final class GeoFormatUtils {
             throw new IllegalArgumentException("CSV coordinates cannot be empty");
         }
         return GEOMETRY_FACTORY.createMultiLineString(lineStrings.toArray(LineString[]::new));
+    }
+
+    private static Geometry createMultiPoint(String csv) {
+        if (csv == null || csv.isBlank()) {
+            throw new IllegalArgumentException("CSV coordinates cannot be empty");
+        }
+
+        List<Point> points = Arrays.stream(csv.split("\\|"))
+                .map(String::trim)
+                .filter(item -> !item.isBlank())
+                .map(GeoFormatUtils::parseCsvCoordinates)
+                .map(coordinates -> {
+                    if (coordinates.size() != 1) {
+                        throw new IllegalArgumentException("MultiPoint segment must contain exactly one coordinate pair");
+                    }
+                    return GEOMETRY_FACTORY.createPoint(coordinates.get(0));
+                })
+                .toList();
+
+        if (points.isEmpty()) {
+            throw new IllegalArgumentException("CSV coordinates cannot be empty");
+        }
+        return GEOMETRY_FACTORY.createMultiPoint(points.toArray(Point[]::new));
+    }
+
+    private static Geometry createMultiPolygon(String csv) {
+        if (csv == null || csv.isBlank()) {
+            throw new IllegalArgumentException("CSV coordinates cannot be empty");
+        }
+
+        List<Polygon> polygons = Arrays.stream(csv.split("\\|"))
+                .map(String::trim)
+                .filter(item -> !item.isBlank())
+                .map(part -> (Polygon) createPolygon(parseCsvCoordinates(part)))
+                .toList();
+
+        if (polygons.isEmpty()) {
+            throw new IllegalArgumentException("CSV coordinates cannot be empty");
+        }
+        return GEOMETRY_FACTORY.createMultiPolygon(polygons.toArray(Polygon[]::new));
     }
 }

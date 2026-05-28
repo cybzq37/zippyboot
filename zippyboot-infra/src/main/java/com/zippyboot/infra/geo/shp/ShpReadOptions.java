@@ -17,6 +17,6 @@ public record ShpReadOptions(
     }
 
     public static ShpReadOptions defaults() {
-        return new ShpReadOptions(StandardCharsets.UTF_8, true, true, true, true, true, null);
+        return new ShpReadOptions(StandardCharsets.UTF_8, true, true, false, false, false, null);
     }
 }

@@ -23,7 +23,9 @@ class ShpSampleArchiveTest {
         Path sampleZip = ShpTestSupport.resolveRepoPath("data", "shp_demo.zip");
         assertTrue(Files.exists(sampleZip), "sample zip should exist: " + sampleZip);
 
-        ShpReadResult source = ShpReader.read(sampleZip.toString());
+        ShpReadResult source = ShpReader.read(sampleZip.toString(), new ShpReadOptions(
+                StandardCharsets.UTF_8, true, true, true, false, false, null
+        ));
         assertFalse(source.features().isEmpty(), "sample shapefile should contain features");
         assertFalse(source.schema().fields().isEmpty(), "sample shapefile should contain fields");
 

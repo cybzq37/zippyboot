@@ -31,7 +31,8 @@ class ShpReaderTest {
         assertEquals("name", result.schema().fields().getFirst().normalizedName());
         assertEquals("alice", features.getFirst().attributes().get("name"));
         assertNotNull(features.getFirst().geometry());
-        assertEquals("POINT (116.4 39.9)", features.getFirst().geometry().wkt());
+        assertNotNull(features.getFirst().geometry().geometry());
+        assertNull(features.getFirst().geometry().wkt());
     }
 
     @Test
