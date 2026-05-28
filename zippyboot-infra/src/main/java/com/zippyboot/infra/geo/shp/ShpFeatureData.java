@@ -1,5 +1,7 @@
 package com.zippyboot.infra.geo.shp;
 
+import org.locationtech.jts.geom.Geometry;
+
 import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -7,7 +9,7 @@ import java.util.Map;
 public record ShpFeatureData(
         String id,
         Map<String, Object> attributes,
-        ShpGeometryData geometry
+        Geometry geometry
 ) {
     public ShpFeatureData {
         attributes = attributes == null

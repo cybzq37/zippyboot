@@ -48,7 +48,7 @@ class ShpSampleArchiveTest {
             ShpFeatureData sourceFeature = source.features().get(i);
             ShpFeatureData roundTripFeature = roundTrip.features().get(i);
             assertNotNull(roundTripFeature.geometry());
-            assertEquals(sourceFeature.geometry().wkt(), roundTripFeature.geometry().wkt());
+            assertEquals(sourceFeature.geometry().toText(), roundTripFeature.geometry().toText());
 
             for (ShpFieldMeta field : source.schema().fields()) {
                 String originalName = field.originalName();

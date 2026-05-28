@@ -32,12 +32,7 @@ class ShpWriterTest {
         List<ShpFeatureData> features = List.of(new ShpFeatureData(
                 "feature-1",
                 Map.of("daoLuMing", "beijing road", "sortOrder", 1),
-                new ShpGeometryData(
-                        GEOMETRY_FACTORY.createPoint(new Coordinate(116.4, 39.9)),
-                        null,
-                        null,
-                        null
-                )
+                GEOMETRY_FACTORY.createPoint(new Coordinate(116.4, 39.9))
         ));
 
         ShpWriteResult writeResult = ShpWriter.write(shpPath.toString(), schema, features, new ShpWriteOptions(
@@ -64,7 +59,7 @@ class ShpWriterTest {
         assertEquals("daoLuMing", writeResult.schema().fieldNameMapping().get("道路名"));
         assertEquals("beijing road", readResult.features().getFirst().attributes().get("daoLuMing"));
         assertEquals(1, readResult.features().getFirst().attributes().get("sortOrder"));
-        assertEquals("POINT (116.4 39.9)", readResult.features().getFirst().geometry().wkt());
+        assertEquals("POINT (116.4 39.9)", readResult.features().getFirst().geometry().toText());
     }
 
     @Test
@@ -80,7 +75,7 @@ class ShpWriterTest {
         List<ShpFeatureData> features = List.of(new ShpFeatureData(
                 "feature-1",
                 attributes,
-                new ShpGeometryData(null, "POINT (116.4 39.9)", null, null)
+                GEOMETRY_FACTORY.createPoint(new Coordinate(116.4, 39.9))
         ));
 
         ShpWriteResult writeResult = ShpWriter.write(shpPath.toString(), schema, features, new ShpWriteOptions(
@@ -105,12 +100,7 @@ class ShpWriterTest {
         List<ShpFeatureData> features = List.of(new ShpFeatureData(
                 "feature-1",
                 Map.of("name", "demo"),
-                new ShpGeometryData(
-                        GEOMETRY_FACTORY.createPoint(new Coordinate(121.5, 31.2)),
-                        null,
-                        null,
-                        null
-                )
+                GEOMETRY_FACTORY.createPoint(new Coordinate(121.5, 31.2))
         ));
 
         ShpWriteResult writeResult = ShpWriter.write(shpPath.toString(), schema, features);

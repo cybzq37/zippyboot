@@ -31,21 +31,6 @@ class ShpReaderTest {
         assertEquals("name", result.schema().fields().getFirst().normalizedName());
         assertEquals("alice", features.getFirst().attributes().get("name"));
         assertNotNull(features.getFirst().geometry());
-        assertNotNull(features.getFirst().geometry().geometry());
-        assertNull(features.getFirst().geometry().wkt());
-    }
-
-    @Test
-    void shouldRespectReadOptions() throws Exception {
-        Path shpPath = ShpTestSupport.createPointShapefile(tempDir, "sample", "alice");
-        ShpReadOptions options = new ShpReadOptions(StandardCharsets.UTF_8, true, false, true, false, false, "sample");
-
-        List<ShpFeatureData> features = ShpReader.read(shpPath.toString(), options).features();
-
-        assertNull(features.getFirst().geometry().geometry());
-        assertNotNull(features.getFirst().geometry().wkt());
-        assertNull(features.getFirst().geometry().geoJson());
-        assertNull(features.getFirst().geometry().csv());
     }
 
     @Test

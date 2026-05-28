@@ -26,6 +26,7 @@ import java.io.IOException;
 import java.net.URI;
 
 @AutoConfiguration
+@ConditionalOnProperty(prefix = "zippyboot.infra.storage", name = "enabled", havingValue = "true", matchIfMissing = true)
 @EnableConfigurationProperties(StorageProperties.class)
 public class StorageAutoConfiguration {
 

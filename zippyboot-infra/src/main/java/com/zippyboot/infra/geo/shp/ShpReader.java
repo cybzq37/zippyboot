@@ -1,6 +1,5 @@
 package com.zippyboot.infra.geo.shp;
 
-import com.zippyboot.infra.geo.GeoFormatUtils;
 import org.geotools.api.data.DataStore;
 import org.geotools.api.data.DataStoreFinder;
 import org.geotools.api.data.FeatureSource;
@@ -59,32 +58,24 @@ public final class ShpReader {
                 while (iterator.hasNext()) {
                     SimpleFeature feature = iterator.next();
                     Map<String, Object> rawAttributes = new LinkedHashMap<>();
-                    ShpGeometryData geometryData = null;
+                    Geometry geometry = null;
 
                     for (var descriptor : feature.getFeatureType().getAttributeDescriptors()) {
                         String attrName = descriptor.getLocalName();
                         Object value = feature.getAttribute(attrName);
-                        if (value instanceof Geometry geometry) {
-                            geometryData = buildGeometryData(geometry, readOptions);
+                        if (value instanceof Geometry geom) {
+                            geometry = geom;
                         } else {
                             rawAttributes.put(attrName, value);
                         }
                     }
-                    features.add(ShpSchemaMapper.buildFeatureData(feature.getID(), rawAttributes, geometryData, fieldNameMapping));
+                    features.add(ShpSchemaMapper.buildFeatureData(feature.getID(), rawAttributes, geometry, fieldNameMapping));
                 }
             }
             return new ShpReadResult(schema, features);
         } finally {
             dataStore.dispose();
         }
-    }
-
-    private static ShpGeometryData buildGeometryData(Geometry geometry, ShpReadOptions options) throws IOException {
-        Geometry rawGeometry = options.includeGeometry() ? geometry : null;
-        String wkt = options.includeWkt() ? GeoFormatUtils.geometryToWkt(geometry) : null;
-        String geoJson = options.includeGeoJson() ? GeoFormatUtils.geometryToGeoJson(geometry) : null;
-        String csv = options.includeCsv() ? GeoFormatUtils.geometryToCsv(geometry) : null;
-        return new ShpGeometryData(rawGeometry, wkt, geoJson, csv);
     }
 
     private static String resolveTypeName(DataStore dataStore, String requestedTypeName) throws IOException {

@@ -44,7 +44,7 @@ final class ShpSchemaMapper {
     static ShpFeatureData buildFeatureData(
             String id,
             Map<String, Object> rawAttributes,
-            ShpGeometryData geometryData,
+            Geometry geometry,
             Map<String, String> fieldNameMapping
     ) {
         Map<String, Object> attributes = new LinkedHashMap<>();
@@ -52,7 +52,7 @@ final class ShpSchemaMapper {
             String normalizedName = fieldNameMapping.getOrDefault(entry.getKey(), entry.getKey());
             attributes.put(normalizedName, entry.getValue());
         }
-        return new ShpFeatureData(id, attributes, geometryData);
+        return new ShpFeatureData(id, attributes, geometry);
     }
 
     private static final int MAX_NAME_DEDUP_RETRIES = 9999;

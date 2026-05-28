@@ -11,6 +11,8 @@ import org.apache.ibatis.session.SqlSessionFactory;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.DependsOn;
 
@@ -21,10 +23,13 @@ import java.util.List;
  * <p>
  * 提供分页拦截器、{@link PageableInterceptor} 和 ObjectMapper 注入。
  * <p>
- * 需在 application.yml 中配置 handler 扫描路径：
+ * 需在 application.yml 中配置：
  * <pre>
  * mybatis-plus:
  *   type-handlers-package: com.zippyboot.infra.mybatis.handler
+ *   configuration:
+ *     map-underscore-to-camel-case: true
+ *     log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
  * </pre>
  * <p>
  * 拦截器执行顺序（MyBatis 后注册先执行）：
@@ -35,6 +40,8 @@ import java.util.List;
  */
 @AutoConfiguration(after = MybatisPlusAutoConfiguration.class)
 @ConditionalOnClass(MybatisPlusInterceptor.class)
+@ConditionalOnProperty(prefix = "zippyboot.mybatis", name = "enabled", havingValue = "true", matchIfMissing = true)
+@EnableConfigurationProperties(MybatisProperties.class)
 public class MybatisAutoConfiguration {
 
     @Bean

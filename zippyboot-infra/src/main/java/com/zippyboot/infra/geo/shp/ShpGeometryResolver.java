@@ -33,16 +33,9 @@ final class ShpGeometryResolver {
 
         if (resolvedType == null || resolvedSrid == null) {
             for (ShpFeatureData feature : features) {
-                ShpGeometryData geometryData = feature.geometry();
-                if (geometryData == null) {
-                    continue;
-                }
-                Geometry geometry = geometryData.geometry();
+                Geometry geometry = feature.geometry();
                 if (geometry == null) {
-                    geometry = resolveFallbackGeometry(geometryData);
-                    if (geometry == null) {
-                        continue;
-                    }
+                    continue;
                 }
                 if (resolvedType == null) {
                     resolvedType = geometryTypeOf(geometry);
@@ -63,47 +56,7 @@ final class ShpGeometryResolver {
         return new ResolvedWriteContext(new ResolvedGeometry(resolvedType, binding), resolvedSrid);
     }
 
-    private static Geometry resolveFallbackGeometry(ShpGeometryData geometryData) {
-        if (geometryData.wkt() != null && !geometryData.wkt().isBlank()) {
-            try {
-                return GeoFormatUtils.wktToGeometry(geometryData.wkt());
-            } catch (Exception ignored) {
-            }
-        }
-        if (geometryData.geoJson() != null && !geometryData.geoJson().isBlank()) {
-            try {
-                return GeoFormatUtils.geoJsonToGeometry(geometryData.geoJson());
-            } catch (IOException ignored) {
-            }
-        }
-        return null;
-    }
-
-    static Geometry resolve(ShpGeometryData geometryData, GeometryType expectedType) throws IOException {
-        if (geometryData == null) {
-            return null;
-        }
-
-        Geometry geometry = geometryData.geometry();
-        if (geometry == null && geometryData.wkt() != null && !geometryData.wkt().isBlank()) {
-            try {
-                geometry = GeoFormatUtils.wktToGeometry(geometryData.wkt());
-            } catch (Exception e) {
-                throw new IOException("Failed to parse WKT geometry: " + geometryData.wkt(), e);
-            }
-        }
-        if (geometry == null && geometryData.geoJson() != null && !geometryData.geoJson().isBlank()) {
-            geometry = GeoFormatUtils.geoJsonToGeometry(geometryData.geoJson());
-        }
-        if (geometry == null && geometryData.csv() != null && !geometryData.csv().isBlank()) {
-            if (expectedType == null) {
-                throw new IllegalArgumentException(
-                        "geometryType is required when geometry is provided only as csv, "
-                                + "because csv format does not carry geometry type information. "
-                                + "Use ShpWriteOptions.geometryType() to specify the expected type (POINT, LINESTRING, POLYGON, etc.)");
-            }
-            geometry = GeoFormatUtils.csvToGeometry(geometryData.csv(), expectedType);
-        }
+    static Geometry resolve(Geometry geometry, GeometryType expectedType) throws IOException {
         if (geometry == null) {
             return null;
         }

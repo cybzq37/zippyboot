@@ -9,7 +9,7 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
  * @author lichunqing
  */
 @Data
-@ConfigurationProperties(prefix = "zippyboot.infra.satoken")
+@ConfigurationProperties(prefix = "zippyboot.satoken")
 public class SaTokenProperties {
 
     /**
