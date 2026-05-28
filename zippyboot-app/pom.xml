@@ -24,7 +24,31 @@
         </dependency>
         <dependency>
             <groupId>com.zippyboot</groupId>
-            <artifactId>zippyboot-infra</artifactId>
+            <artifactId>zippyboot-infra-redis</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.zippyboot</groupId>
+            <artifactId>zippyboot-infra-mybatis</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.zippyboot</groupId>
+            <artifactId>zippyboot-infra-kafka</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.zippyboot</groupId>
+            <artifactId>zippyboot-infra-es</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.zippyboot</groupId>
+            <artifactId>zippyboot-infra-storage</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.zippyboot</groupId>
+            <artifactId>zippyboot-infra-geo</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.zippyboot</groupId>
+            <artifactId>zippyboot-infra-web</artifactId>
         </dependency>
         <dependency>
             <groupId>org.springframework.boot</groupId>

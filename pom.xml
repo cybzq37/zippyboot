@@ -85,6 +85,41 @@
                 <version>${project.version}</version>
             </dependency>
             <dependency>
+                <groupId>com.zippyboot</groupId>
+                <artifactId>zippyboot-infra-redis</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.zippyboot</groupId>
+                <artifactId>zippyboot-infra-kafka</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.zippyboot</groupId>
+                <artifactId>zippyboot-infra-es</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.zippyboot</groupId>
+                <artifactId>zippyboot-infra-mybatis</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.zippyboot</groupId>
+                <artifactId>zippyboot-infra-storage</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.zippyboot</groupId>
+                <artifactId>zippyboot-infra-geo</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.zippyboot</groupId>
+                <artifactId>zippyboot-infra-web</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
                 <groupId>cn.dev33</groupId>
                 <artifactId>sa-token-spring-boot3-starter</artifactId>
                 <version>${sa-token.version}</version>
