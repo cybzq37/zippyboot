@@ -1,6 +1,7 @@
 package com.zippyboot.infra.redis;
 
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
 import org.springframework.data.redis.core.Cursor;
 import org.springframework.data.redis.core.RedisCallback;
@@ -35,6 +36,13 @@ public class RedisTemplate {
     );
 
     private final StringRedisTemplate redisTemplate;
+
+    private org.springframework.data.redis.core.RedisTemplate<String, Object> objectRedisTemplate;
+
+    @Autowired(required = false)
+    public void setObjectRedisTemplate(org.springframework.data.redis.core.RedisTemplate<String, Object> objectRedisTemplate) {
+        this.objectRedisTemplate = objectRedisTemplate;
+    }
 
     public void put(String key, String value) {
         redisTemplate.opsForValue().set(key, value);
@@ -143,6 +151,50 @@ public class RedisTemplate {
 
     public Long decrement(String key, long delta) {
         return redisTemplate.opsForValue().decrement(key, delta);
+    }
+
+    // ==================== Object 操作 ====================
+
+    public void putObject(String key, Object value) {
+        if (objectRedisTemplate == null) {
+            throw new IllegalStateException("ObjectRedisTemplate is not available");
+        }
+        objectRedisTemplate.opsForValue().set(key, value);
+    }
+
+    public void putObject(String key, Object value, Duration ttl) {
+        if (objectRedisTemplate == null) {
+            throw new IllegalStateException("ObjectRedisTemplate is not available");
+        }
+        objectRedisTemplate.opsForValue().set(key, value, ttl);
+    }
+
+    public Object getObject(String key) {
+        if (objectRedisTemplate == null) {
+            throw new IllegalStateException("ObjectRedisTemplate is not available");
+        }
+        return objectRedisTemplate.opsForValue().get(key);
+    }
+
+    public void deleteObject(String key) {
+        if (objectRedisTemplate == null) {
+            throw new IllegalStateException("ObjectRedisTemplate is not available");
+        }
+        objectRedisTemplate.delete(key);
+    }
+
+    public Long getObjectExpire(String key) {
+        if (objectRedisTemplate == null) {
+            throw new IllegalStateException("ObjectRedisTemplate is not available");
+        }
+        return objectRedisTemplate.getExpire(key);
+    }
+
+    public Boolean objectExpire(String key, Duration ttl) {
+        if (objectRedisTemplate == null) {
+            throw new IllegalStateException("ObjectRedisTemplate is not available");
+        }
+        return objectRedisTemplate.expire(key, ttl);
     }
 
     public void hashPut(String key, String hashKey, String value) {
