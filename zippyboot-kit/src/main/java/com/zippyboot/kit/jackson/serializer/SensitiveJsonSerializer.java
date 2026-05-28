@@ -9,6 +9,7 @@ import com.fasterxml.jackson.databind.ser.ContextualSerializer;
 import com.zippyboot.kit.jackson.plugins.sensitive.Sensitive;
 import com.zippyboot.kit.jackson.plugins.sensitive.SensitiveService;
 import com.zippyboot.kit.jackson.plugins.sensitive.SensitiveStrategy;
+import com.zippyboot.kit.jackson.module.SensitiveServiceHolder;
 
 import java.io.IOException;
 

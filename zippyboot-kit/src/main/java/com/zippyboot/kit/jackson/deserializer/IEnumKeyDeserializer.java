@@ -1,4 +1,4 @@
-package com.zippyboot.kit.jackson.module;
+package com.zippyboot.kit.jackson.deserializer;
 
 import com.fasterxml.jackson.databind.DeserializationContext;
 import com.fasterxml.jackson.databind.KeyDeserializer;
@@ -15,6 +15,9 @@ public class IEnumKeyDeserializer extends KeyDeserializer {
 
     @Override
     public Object deserializeKey(String key, DeserializationContext ctxt) throws IOException {
+        if (ctxt.getContextualType() == null) {
+            return key;
+        }
         Class<?> targetType = ctxt.getContextualType().getRawClass();
         if (targetType == null || !IEnum.class.isAssignableFrom(targetType)) {
             return key;

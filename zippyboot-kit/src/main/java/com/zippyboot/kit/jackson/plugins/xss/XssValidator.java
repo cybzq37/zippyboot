@@ -13,7 +13,25 @@ import java.util.regex.Pattern;
 public class XssValidator implements ConstraintValidator<Xss, String> {
 
     private static final Pattern XSS_PATTERN = Pattern.compile(
-            "(?i)(<[^>]+>)|(javascript\\s*:)|((?:on[a-z]+)\\s*=)|(data\\s*:.*?(?:text/html|application/xhtml\\+xml))|(vbscript\\s*:)"
+            "(?i)"
+                    + "(<\\s*script[^>]*>)"                   // <script...>
+                    + "|(<\\s*img[^>]*>)"                     // <img...>
+                    + "|(<\\s*iframe[^>]*>)"                   // <iframe...>
+                    + "|(<\\s*object[^>]*>)"                   // <object...>
+                    + "|(<\\s*embed[^>]*>)"                    // <embed...>
+                    + "|(<\\s*link[^>]*>)"                     // <link...>
+                    + "|(<\\s*style[^>]*>)"                    // <style...>
+                    + "|(<\\s*svg[^>]*>)"                      // <svg...>
+                    + "|(<\\s*marquee[^>]*>)"                  // <marquee...>
+                    + "|(<\\s*base[^>]*>)"                     // <base...>
+                    + "|(<\\s*form[^>]*>)"                     // <form...>
+                    + "|(javascript\\s*:)"                     // javascript:
+                    + "|(vbscript\\s*:)"                       // vbscript:
+                    + "|(data\\s*:.*?(?:text/html|application/xhtml))"  // data:text/html
+                    + "|((?:on[a-z]+)\\s*=)"                   // on*= event handlers
+                    + "|(expression\\s*\\()"                   // CSS expression()
+                    + "|(<[^>]*\\bon\\w+\\s*=)"                // <tag on*=>
+                    + "|(<[^>]*\\bstyle\\s*=\\s*[\"'].*?expression)" // style with expression
     );
 
     @Override

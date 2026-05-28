@@ -1,7 +1,11 @@
 package com.zippyboot.kit.jackson.module;
 
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.module.SimpleModule;
 import com.zippyboot.kit.enums.IEnum;
+import com.zippyboot.kit.jackson.deserializer.IEnumDeserializer;
+import com.zippyboot.kit.jackson.deserializer.IEnumKeyDeserializer;
+import com.zippyboot.kit.jackson.serializer.IEnumSerializer;
 
 /**
  * Jackson 模块，自动注册 {@link IEnum} 的序列化/反序列化器。
@@ -15,9 +19,21 @@ import com.zippyboot.kit.enums.IEnum;
  */
 public class IEnumModule extends SimpleModule {
 
+    @SuppressWarnings({"unchecked", "rawtypes"})
     public IEnumModule() {
         super("IEnumModule");
-        addDeserializer(IEnum.class, new IEnumDeserializer());
+        addSerializer((Class) IEnum.class, new IEnumSerializer());
         addKeyDeserializer(IEnum.class, new IEnumKeyDeserializer());
+    }
+
+    @Override
+    public void setupModule(SetupContext context) {
+        super.setupModule(context);
+        // 通过 mixin 为所有 IEnum 实现类注册自定义反序列化器
+        context.setMixInAnnotations(IEnum.class, IEnumMixin.class);
+    }
+
+    @JsonDeserialize(using = IEnumDeserializer.class)
+    abstract static class IEnumMixin {
     }
 }

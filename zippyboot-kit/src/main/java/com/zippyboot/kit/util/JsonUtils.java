@@ -5,20 +5,9 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.JavaType;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.SerializationFeature;
-import com.fasterxml.jackson.databind.ser.std.ToStringSerializer;
-import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
-import com.fasterxml.jackson.datatype.jsr310.deser.LocalDateTimeDeserializer;
-import com.fasterxml.jackson.datatype.jsr310.ser.LocalDateTimeSerializer;
-import com.zippyboot.kit.jackson.module.IEnumModule;
-import com.zippyboot.kit.jackson.serializer.BigNumberSerializer;
-import com.zippyboot.kit.jackson.serializer.SensitiveServiceHolder;
+import com.zippyboot.kit.jackson.config.JacksonConfig;
+import com.zippyboot.kit.jackson.module.SensitiveServiceHolder;
 
-import java.math.BigDecimal;
-import java.math.BigInteger;
-import java.text.SimpleDateFormat;
-import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Map;
 
@@ -37,8 +26,6 @@ import java.util.Map;
  * </pre>
  */
 public final class JsonUtils {
-
-    private static final String DEFAULT_DATE_TIME_PATTERN = "yyyy-MM-dd HH:mm:ss";
 
     private static volatile ObjectMapper objectMapper;
 
@@ -189,22 +176,8 @@ public final class JsonUtils {
     // ==================== 内部 ====================
 
     private static ObjectMapper createMapper() {
-        DateTimeFormatter dateTimeFormatter = DateTimeFormatter.ofPattern(DEFAULT_DATE_TIME_PATTERN);
-
-        JavaTimeModule javaTimeModule = new JavaTimeModule();
-        javaTimeModule.addSerializer(LocalDateTime.class, new LocalDateTimeSerializer(dateTimeFormatter));
-        javaTimeModule.addDeserializer(LocalDateTime.class, new LocalDateTimeDeserializer(dateTimeFormatter));
-        javaTimeModule.addSerializer(Long.class, BigNumberSerializer.INSTANCE);
-        javaTimeModule.addSerializer(Long.TYPE, BigNumberSerializer.INSTANCE);
-        javaTimeModule.addSerializer(BigInteger.class, BigNumberSerializer.INSTANCE);
-        javaTimeModule.addSerializer(BigDecimal.class, ToStringSerializer.instance);
-
-        ObjectMapper mapper = new ObjectMapper();
-        mapper.registerModule(javaTimeModule);
-        mapper.registerModule(new IEnumModule());
-        mapper.disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES);
-        mapper.disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
-        mapper.setDateFormat(new SimpleDateFormat(DEFAULT_DATE_TIME_PATTERN));
+        ObjectMapper mapper = JacksonConfig.configureObjectMapper(new ObjectMapper());
+        mapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
 
         // 初始化脱敏服务（默认开启脱敏）
         new SensitiveServiceHolder(() -> true);

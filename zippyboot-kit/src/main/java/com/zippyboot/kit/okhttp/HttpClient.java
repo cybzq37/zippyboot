@@ -24,14 +24,14 @@ import java.util.Map;
  * 统一返回 {@link HttpResponse}，通过 {@link HttpResponse#body()} 等方法获取响应体。
  *
  * <pre>
- * // 注入或创建
- * HttpClient client = new HttpClient();
+ * // 单例模式（推荐）
+ * HttpResponse resp = HttpClient.getInstance().get("https://api.example.com/users");
  *
- * // GET
- * HttpResponse resp = client.get("https://api.example.com/users", Map.of("page", "1"));
+ * // 自定义实例
+ * HttpClient client = new HttpClient(okHttpClient, true);
  *
  * // POST JSON
- * HttpResponse resp = client.postJson(url, jsonBody);
+ * HttpResponse resp = HttpClient.getInstance().postJson(url, jsonBody);
  *
  * // 判断结果
  * if (resp.isSuccessful()) {
@@ -46,6 +46,24 @@ public class HttpClient {
     private static final String DEFAULT_JSON_CONTENT_TYPE = "application/json";
     private static final String DEFAULT_XML_CONTENT_TYPE = "application/xml";
     private static final String DEFAULT_TEXT_CONTENT_TYPE = "text/plain";
+
+    private static volatile HttpClient instance;
+
+    /**
+     * 获取默认单例实例（懒加载，线程安全）。
+     */
+    public static HttpClient getInstance() {
+        HttpClient h = instance;
+        if (h == null) {
+            synchronized (HttpClient.class) {
+                h = instance;
+                if (h == null) {
+                    instance = h = new HttpClient();
+                }
+            }
+        }
+        return h;
+    }
 
     private final OkHttpClient client;
     private final boolean throwOnHttpError;

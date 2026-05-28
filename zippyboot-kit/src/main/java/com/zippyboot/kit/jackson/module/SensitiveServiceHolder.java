@@ -1,6 +1,7 @@
-package com.zippyboot.kit.jackson.serializer;
+package com.zippyboot.kit.jackson.module;
 
 import com.zippyboot.kit.jackson.plugins.sensitive.SensitiveService;
+import org.springframework.beans.factory.InitializingBean;
 
 /**
  * 持有 {@link SensitiveService} 的 Spring Bean 引用
@@ -10,12 +11,19 @@ import com.zippyboot.kit.jackson.plugins.sensitive.SensitiveService;
  *
  * @author lichunqing
  */
-public class SensitiveServiceHolder {
+public class SensitiveServiceHolder implements InitializingBean {
 
-    private static SensitiveService instance;
+    private static volatile SensitiveService instance;
+
+    private final SensitiveService sensitiveService;
 
     public SensitiveServiceHolder(SensitiveService sensitiveService) {
-        instance = sensitiveService;
+        this.sensitiveService = sensitiveService;
+    }
+
+    @Override
+    public void afterPropertiesSet() {
+        instance = this.sensitiveService;
     }
 
     /**
