@@ -50,7 +50,7 @@ public class GlobalExceptionHandler {
         } else if (properties.isLogWarnForBusiness()) {
             log.warn("Business exception, code={}, msg={}", ex.getCode(), ex.getMessage());
         }
-        return build(ex.getStatus(), ex.getCode(), ex.getMessage(), request, resolveDetails(ex.getDetails(), ex));
+        return build(ex.getStatus(), ex.getCode(), ex.getMessage(), request, resolveDetails(ex.getDetails(), ex, ex.getStatus()));
     }
 
     @ExceptionHandler({
@@ -106,7 +106,7 @@ public class GlobalExceptionHandler {
                 BaseException.INTERNAL_ERROR_CODE,
                 INTERNAL_SERVER_ERROR_MESSAGE,
                 request,
-                resolveDetails(List.of(), ex)
+                resolveDetails(List.of(), ex, HttpStatus.INTERNAL_SERVER_ERROR)
         );
     }
 
@@ -142,11 +142,11 @@ public class GlobalExceptionHandler {
         return violation.getPropertyPath() + ": " + violation.getMessage();
     }
 
-    private List<String> resolveDetails(List<String> details, Throwable ex) {
+    private List<String> resolveDetails(List<String> details, Throwable ex, HttpStatusCode status) {
         if (!details.isEmpty()) {
             return details;
         }
-        if (!properties.isIncludeStackTrace()) {
+        if (!properties.isIncludeStackTrace() || !status.is5xxServerError()) {
             return List.of();
         }
         Throwable target = ex.getCause() != null ? ex.getCause() : ex;
