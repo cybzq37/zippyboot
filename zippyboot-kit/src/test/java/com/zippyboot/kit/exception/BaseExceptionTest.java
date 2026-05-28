@@ -33,4 +33,15 @@ class BaseExceptionTest {
         assertThat(systemException.getStatus().value()).isEqualTo(500);
         assertThat(systemException.getCode()).isEqualTo(BaseException.INTERNAL_ERROR_CODE);
     }
+
+    @Test
+    void shouldProvideDefaultMessageAndPreserveFactoryDetails() {
+        BaseException businessException = BaseException.badRequest("BIZ-001", null, List.of("name: duplicated"));
+        BaseException systemException = BaseException.internalError("SYS-500", "", new IllegalStateException("boom"), List.of("trace: hidden"));
+
+        assertThat(businessException.getMessage()).isEqualTo("Bad request");
+        assertThat(businessException.getDetails()).containsExactly("name: duplicated");
+        assertThat(systemException.getMessage()).isEqualTo("Internal server error");
+        assertThat(systemException.getDetails()).containsExactly("trace: hidden");
+    }
 }

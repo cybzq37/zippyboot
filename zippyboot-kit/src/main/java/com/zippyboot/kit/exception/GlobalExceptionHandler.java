@@ -21,12 +21,18 @@ import org.springframework.web.context.request.WebRequest;
 import org.springframework.web.method.annotation.HandlerMethodValidationException;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 
+import java.io.PrintWriter;
+import java.io.StringWriter;
 import java.util.List;
 
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
     private static final Logger log = LoggerFactory.getLogger(GlobalExceptionHandler.class);
+    private static final String VALIDATION_FAILED_MESSAGE = "Validation failed";
+    private static final String INTERNAL_SERVER_ERROR_MESSAGE = "Internal server error";
+    private static final String MALFORMED_REQUEST_MESSAGE = "Malformed request body";
+    private static final int MAX_STACK_TRACE_LINES = 20;
 
     private final GlobalExceptionProperties properties;
 
@@ -41,7 +47,7 @@ public class GlobalExceptionHandler {
         } else if (properties.isLogWarnForBusiness()) {
             log.warn("Business exception, code={}, msg={}", ex.getCode(), ex.getMessage());
         }
-        return build(ex.getStatus(), ex.getCode(), ex.getMessage(), request, ex.getDetails());
+        return build(ex.getStatus(), ex.getCode(), ex.getMessage(), request, resolveDetails(ex.getDetails(), ex));
     }
 
     @ExceptionHandler({
@@ -52,17 +58,20 @@ public class GlobalExceptionHandler {
             HttpMessageNotReadableException.class
     })
     public ResponseEntity<ErrorResponse> handleBadRequest(Exception ex, WebRequest request) {
-        return build(HttpStatus.BAD_REQUEST, BaseException.BAD_REQUEST_CODE, ex.getMessage(), request, List.of());
+        String message = ex instanceof HttpMessageNotReadableException
+                ? MALFORMED_REQUEST_MESSAGE
+                : ex.getMessage();
+        return build(HttpStatus.BAD_REQUEST, BaseException.BAD_REQUEST_CODE, message, request, List.of());
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<ErrorResponse> handleMethodArgumentNotValid(MethodArgumentNotValidException ex, WebRequest request) {
-        return build(HttpStatus.BAD_REQUEST, BaseException.BAD_REQUEST_CODE, "Validation failed", request, collectErrorDetails(ex.getBindingResult()));
+        return build(HttpStatus.BAD_REQUEST, BaseException.BAD_REQUEST_CODE, VALIDATION_FAILED_MESSAGE, request, collectErrorDetails(ex.getBindingResult()));
     }
 
     @ExceptionHandler(BindException.class)
     public ResponseEntity<ErrorResponse> handleBindException(BindException ex, WebRequest request) {
-        return build(HttpStatus.BAD_REQUEST, BaseException.BAD_REQUEST_CODE, "Bind failed", request, collectErrorDetails(ex.getBindingResult()));
+        return build(HttpStatus.BAD_REQUEST, BaseException.BAD_REQUEST_CODE, VALIDATION_FAILED_MESSAGE, request, collectErrorDetails(ex.getBindingResult()));
     }
 
     @ExceptionHandler(HandlerMethodValidationException.class)
@@ -71,7 +80,7 @@ public class GlobalExceptionHandler {
                 .flatMap(result -> result.getResolvableErrors().stream()
                         .map(error -> result.getMethodParameter().getParameterName() + ": " + error.getDefaultMessage()))
                 .toList();
-        return build(HttpStatus.BAD_REQUEST, BaseException.BAD_REQUEST_CODE, "Validation failed", request, details);
+        return build(HttpStatus.BAD_REQUEST, BaseException.BAD_REQUEST_CODE, VALIDATION_FAILED_MESSAGE, request, details);
     }
 
     @ExceptionHandler(ConstraintViolationException.class)
@@ -79,7 +88,7 @@ public class GlobalExceptionHandler {
         List<String> details = ex.getConstraintViolations().stream()
                 .map(this::formatViolation)
                 .toList();
-        return build(HttpStatus.BAD_REQUEST, BaseException.BAD_REQUEST_CODE, "Constraint violation", request, details);
+        return build(HttpStatus.BAD_REQUEST, BaseException.BAD_REQUEST_CODE, VALIDATION_FAILED_MESSAGE, request, details);
     }
 
     @ExceptionHandler(Exception.class)
@@ -89,7 +98,13 @@ public class GlobalExceptionHandler {
         } else {
             log.error("Unhandled exception: {}", ex.toString());
         }
-        return build(HttpStatus.INTERNAL_SERVER_ERROR, BaseException.INTERNAL_ERROR_CODE, "Internal server error", request, List.of());
+        return build(
+                HttpStatus.INTERNAL_SERVER_ERROR,
+                BaseException.INTERNAL_ERROR_CODE,
+                INTERNAL_SERVER_ERROR_MESSAGE,
+                request,
+                resolveDetails(List.of(), ex)
+        );
     }
 
     private ResponseEntity<ErrorResponse> build(HttpStatusCode status, String code, String message, WebRequest request, List<String> details) {
@@ -122,5 +137,24 @@ public class GlobalExceptionHandler {
 
     private String formatViolation(ConstraintViolation<?> violation) {
         return violation.getPropertyPath() + ": " + violation.getMessage();
+    }
+
+    private List<String> resolveDetails(List<String> details, Throwable ex) {
+        if (!details.isEmpty()) {
+            return details;
+        }
+        if (!properties.isIncludeStackTrace()) {
+            return List.of();
+        }
+        Throwable target = ex.getCause() != null ? ex.getCause() : ex;
+        return stackTraceLines(target);
+    }
+
+    private List<String> stackTraceLines(Throwable ex) {
+        StringWriter writer = new StringWriter();
+        ex.printStackTrace(new PrintWriter(writer));
+        return writer.toString().lines()
+                .limit(MAX_STACK_TRACE_LINES)
+                .toList();
     }
 }

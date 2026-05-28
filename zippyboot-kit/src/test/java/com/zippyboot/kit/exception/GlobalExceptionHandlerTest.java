@@ -3,6 +3,7 @@ package com.zippyboot.kit.exception;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.mock.web.MockHttpServletRequest;
 import org.springframework.web.context.request.ServletWebRequest;
 
@@ -42,6 +43,28 @@ class GlobalExceptionHandlerTest {
         assertThat(response.getBody().code()).isEqualTo(BaseException.INTERNAL_ERROR_CODE);
         assertThat(response.getBody().message()).isEqualTo("Internal server error");
         assertThat(response.getBody().path()).isEqualTo("/jobs");
+    }
+
+    @Test
+    void shouldUseStableMessageForUnreadableRequestBody() {
+        ResponseEntity<ErrorResponse> response = handler.handleBadRequest(new HttpMessageNotReadableException("JSON parse error"), request("/users"));
+
+        assertThat(response.getStatusCode().value()).isEqualTo(400);
+        assertThat(response.getBody()).isNotNull();
+        assertThat(response.getBody().message()).isEqualTo("Malformed request body");
+    }
+
+    @Test
+    void shouldIncludeStackTraceDetailsWhenConfigured() {
+        GlobalExceptionProperties properties = new GlobalExceptionProperties();
+        properties.setIncludeStackTrace(true);
+        GlobalExceptionHandler stackTraceHandler = new GlobalExceptionHandler(properties);
+
+        ResponseEntity<ErrorResponse> response = stackTraceHandler.handleException(new IllegalStateException("boom"), request("/jobs"));
+
+        assertThat(response.getBody()).isNotNull();
+        assertThat(response.getBody().details()).isNotEmpty();
+        assertThat(response.getBody().details().get(0)).contains("IllegalStateException");
     }
 
     private static ServletWebRequest request(String path) {
