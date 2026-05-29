@@ -1,10 +1,14 @@
 package com.zippyboot.api.sys.dto.permission;
 
+import lombok.AllArgsConstructor;
 import lombok.Builder;
-import lombok.Value;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 
-@Value
+@Data
 @Builder
+@NoArgsConstructor
+@AllArgsConstructor
 public class PermissionDTO {
 
     String id;

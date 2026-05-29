@@ -3,7 +3,7 @@ server:
 
 spring:
   application:
-    name: zippyboot-app
+    name: zippyboot-demo
 
   # ==================== 数据源（dynamic-datasource 多数据源） ====================
   datasource:

@@ -1,9 +1,37 @@
+# Build
 target/
+build/
+*.jar
+*.war
+*.class
+
+# IDE
 .idea/
 .vscode/
 *.iml
-*.log
+*.ipr
+*.iws
+.project
+.classpath
+.settings/
+
+# OS
 .DS_Store
-zippyboot-app/logs/zippyboot-app/app-2026-05-27-1.log.gz
-zippyboot-app/build/image/zippyboot-app-1.0.0-SNAPSHOT.jar
-zippyboot-netty/build/image/zippyboot-netty-1.0.0-SNAPSHOT.jar
+Thumbs.db
+desktop.ini
+
+# Logs
+*.log
+*.log.gz
+logs/
+
+# Maven
+.mvn/timing.properties
+.mvn/wrapper/maven-wrapper.jar
+
+# Spring Boot
+spring-shell.log
+
+# Env
+.env
+*.env.local

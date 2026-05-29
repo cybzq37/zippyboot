@@ -12,7 +12,7 @@
     <description>Java 21 + Spring Boot 3.5.x multi-module template</description>
 
     <modules>
-        <module>zippyboot-app</module>
+        <module>zippyboot-demo</module>
         <module>zippyboot-kit</module>
         <module>zippyboot-infra</module>
         <module>zippyboot-module/zippyboot-sys-api</module>
@@ -194,6 +194,7 @@
                     <version>${maven-compiler-plugin.version}</version>
                     <configuration>
                         <release>${maven.compiler.release}</release>
+                        <parameters>true</parameters>
                     </configuration>
                 </plugin>
                 <plugin>
