@@ -1,0 +1,15 @@
+package com.zippy.sys;
+
+import org.junit.jupiter.api.Test;
+import org.springframework.boot.test.context.SpringBootTest;
+
+@SpringBootTest(properties = {
+        "spring.autoconfigure.exclude="
+                + "org.springframework.boot.autoconfigure.data.redis.RedisAutoConfiguration"
+})
+class ZippySysApplicationTests {
+
+    @Test
+    void contextLoads() {
+    }
+}

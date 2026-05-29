@@ -12,12 +12,11 @@
     <description>Java 21 + Spring Boot 3.5.x multi-module template</description>
 
     <modules>
-        <module>zippy-demo</module>
         <module>zippy-kit</module>
         <module>zippy-infra</module>
-        <module>zippy-api/zippy-sys-api</module>
-        <module>zippy-svc/zippy-sys-service</module>
-        <module>zippy-svc/zippy-netty-service</module>
+        <module>zippy-api</module>
+        <module>zippy-svc</module>
+        <module>zippy-demo</module>
     </modules>
 
     <properties>
@@ -31,6 +30,8 @@
         <disruptor.version>3.4.4</disruptor.version>
         <dynamic-datasource.version>4.3.1</dynamic-datasource.version>
         <okhttp.version>4.12.0</okhttp.version>
+        <commons-compress.version>1.27.1</commons-compress.version>
+        <commons-io.version>2.17.0</commons-io.version>
         <tinypinyin.version>2.0.3</tinypinyin.version>
         <maven-compiler-plugin.version>3.13.0</maven-compiler-plugin.version>
         <maven-surefire-plugin.version>3.5.0</maven-surefire-plugin.version>
@@ -173,6 +174,16 @@
                 <groupId>com.github.promeg</groupId>
                 <artifactId>tinypinyin</artifactId>
                 <version>${tinypinyin.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.apache.commons</groupId>
+                <artifactId>commons-compress</artifactId>
+                <version>${commons-compress.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>commons-io</groupId>
+                <artifactId>commons-io</artifactId>
+                <version>${commons-io.version}</version>
             </dependency>
         </dependencies>
     </dependencyManagement>

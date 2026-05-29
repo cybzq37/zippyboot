@@ -28,6 +28,7 @@ logs/
 # Maven
 .mvn/timing.properties
 .mvn/wrapper/maven-wrapper.jar
+effective-settings*
 
 # Spring Boot
 spring-shell.log
