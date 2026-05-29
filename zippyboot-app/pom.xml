@@ -20,10 +20,6 @@
         </dependency>
         <dependency>
             <groupId>com.zippyboot</groupId>
-            <artifactId>zippyboot-api</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>com.zippyboot</groupId>
             <artifactId>zippyboot-infra-redis</artifactId>
         </dependency>
         <dependency>

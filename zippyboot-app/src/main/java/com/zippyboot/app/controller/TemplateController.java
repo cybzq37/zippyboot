@@ -1,7 +1,7 @@
 package com.zippyboot.app.controller;
 
 import cn.dev33.satoken.stp.StpUtil;
-import com.zippyboot.api.dto.HealthDto;
+import com.zippyboot.app.dto.HealthDto;
 import com.zippyboot.infra.es.EsClient;
 import com.zippyboot.infra.kafka.KafkaClient;
 import com.zippyboot.infra.redis.RedisClient;

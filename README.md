@@ -201,3 +201,13 @@ zippyboot-app
 
 
 - 现在很多方法仍然直接 throws Exception，后面如果被 controller/service 直接调用，异常边界会比较粗。
+
+
+主流分级（标准 RBAC）
+RBAC0：基础版（用户 - 角色 - 权限），90% 业务系统在用
+RBAC1：增加角色继承（父子角色）
+RBAC2：增加角色互斥、约束（如一人不能同时兼任出纳 + 会计）
+RBAC3：整合继承 + 约束，完整标准模型
+
+
+实现 RBAC1

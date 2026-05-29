@@ -12,12 +12,12 @@
     <description>Java 21 + Spring Boot 3.5.x multi-module template</description>
 
     <modules>
-        <module>zippyboot-api</module>
         <module>zippyboot-app</module>
-        <module>zippyboot-netty</module>
-        <module>zippyboot-model</module>
         <module>zippyboot-kit</module>
         <module>zippyboot-infra</module>
+        <module>zippyboot-module/zippyboot-sys-api</module>
+        <module>zippyboot-module/zippyboot-sys-service</module>
+        <module>zippyboot-module/zippyboot-netty-service</module>
     </modules>
 
     <properties>
@@ -66,17 +66,7 @@
             </dependency>
             <dependency>
                 <groupId>com.zippyboot</groupId>
-                <artifactId>zippyboot-model</artifactId>
-                <version>${project.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>com.zippyboot</groupId>
                 <artifactId>zippyboot-kit</artifactId>
-                <version>${project.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>com.zippyboot</groupId>
-                <artifactId>zippyboot-api</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
@@ -122,6 +112,16 @@
             <dependency>
                 <groupId>com.zippyboot</groupId>
                 <artifactId>zippyboot-infra-satoken</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.zippyboot</groupId>
+                <artifactId>zippyboot-sys-api</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.zippyboot</groupId>
+                <artifactId>zippyboot-sys-service</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
