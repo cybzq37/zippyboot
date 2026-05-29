@@ -33,6 +33,9 @@ effective-settings*
 # Spring Boot
 spring-shell.log
 
+# Docker data
+data/
+
 # Env
 .env
 *.env.local

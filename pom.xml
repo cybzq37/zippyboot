@@ -16,7 +16,6 @@
         <module>zippy-infra</module>
         <module>zippy-api</module>
         <module>zippy-svc</module>
-        <module>zippy-demo</module>
     </modules>
 
     <properties>

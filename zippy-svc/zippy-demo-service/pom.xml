@@ -8,10 +8,11 @@
         <groupId>com.zippy</groupId>
         <artifactId>zippy</artifactId>
         <version>1.0.0-SNAPSHOT</version>
+        <relativePath>../../pom.xml</relativePath>
     </parent>
 
-    <artifactId>zippy-demo</artifactId>
-    <name>zippy-demo</name>
+    <artifactId>zippy-demo-service</artifactId>
+    <name>zippy-demo-service</name>
 
     <dependencies>
         <dependency>

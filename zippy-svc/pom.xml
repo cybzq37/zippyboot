@@ -18,5 +18,6 @@
     <modules>
         <module>zippy-sys-service</module>
         <module>zippy-netty-service</module>
+        <module>zippy-demo-service</module>
     </modules>
 </project>
