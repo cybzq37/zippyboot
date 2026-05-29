@@ -4,20 +4,20 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
-    <groupId>com.zippyboot</groupId>
-    <artifactId>zippyboot</artifactId>
+    <groupId>com.zippy</groupId>
+    <artifactId>zippy</artifactId>
     <version>1.0.0-SNAPSHOT</version>
     <packaging>pom</packaging>
-    <name>zippyboot</name>
+    <name>zippy</name>
     <description>Java 21 + Spring Boot 3.5.x multi-module template</description>
 
     <modules>
-        <module>zippyboot-demo</module>
-        <module>zippyboot-kit</module>
-        <module>zippyboot-infra</module>
-        <module>zippyboot-module/zippyboot-sys-api</module>
-        <module>zippyboot-module/zippyboot-sys-service</module>
-        <module>zippyboot-module/zippyboot-netty-service</module>
+        <module>zippy-demo</module>
+        <module>zippy-kit</module>
+        <module>zippy-infra</module>
+        <module>zippy-api/zippy-sys-api</module>
+        <module>zippy-svc/zippy-sys-service</module>
+        <module>zippy-svc/zippy-netty-service</module>
     </modules>
 
     <properties>
@@ -65,63 +65,63 @@
                 <version>${dynamic-datasource.version}</version>
             </dependency>
             <dependency>
-                <groupId>com.zippyboot</groupId>
-                <artifactId>zippyboot-kit</artifactId>
+                <groupId>com.zippy</groupId>
+                <artifactId>zippy-kit</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
-                <groupId>com.zippyboot</groupId>
-                <artifactId>zippyboot-infra</artifactId>
+                <groupId>com.zippy</groupId>
+                <artifactId>zippy-infra</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
-                <groupId>com.zippyboot</groupId>
-                <artifactId>zippyboot-infra-redis</artifactId>
+                <groupId>com.zippy</groupId>
+                <artifactId>zippy-infra-redis</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
-                <groupId>com.zippyboot</groupId>
-                <artifactId>zippyboot-infra-kafka</artifactId>
+                <groupId>com.zippy</groupId>
+                <artifactId>zippy-infra-kafka</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
-                <groupId>com.zippyboot</groupId>
-                <artifactId>zippyboot-infra-es</artifactId>
+                <groupId>com.zippy</groupId>
+                <artifactId>zippy-infra-es</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
-                <groupId>com.zippyboot</groupId>
-                <artifactId>zippyboot-infra-mybatis</artifactId>
+                <groupId>com.zippy</groupId>
+                <artifactId>zippy-infra-mybatis</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
-                <groupId>com.zippyboot</groupId>
-                <artifactId>zippyboot-infra-storage</artifactId>
+                <groupId>com.zippy</groupId>
+                <artifactId>zippy-infra-storage</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
-                <groupId>com.zippyboot</groupId>
-                <artifactId>zippyboot-infra-geo</artifactId>
+                <groupId>com.zippy</groupId>
+                <artifactId>zippy-infra-geo</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
-                <groupId>com.zippyboot</groupId>
-                <artifactId>zippyboot-infra-web</artifactId>
+                <groupId>com.zippy</groupId>
+                <artifactId>zippy-infra-web</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
-                <groupId>com.zippyboot</groupId>
-                <artifactId>zippyboot-infra-satoken</artifactId>
+                <groupId>com.zippy</groupId>
+                <artifactId>zippy-infra-satoken</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
-                <groupId>com.zippyboot</groupId>
-                <artifactId>zippyboot-sys-api</artifactId>
+                <groupId>com.zippy</groupId>
+                <artifactId>zippy-sys-api</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
-                <groupId>com.zippyboot</groupId>
-                <artifactId>zippyboot-sys-service</artifactId>
+                <groupId>com.zippy</groupId>
+                <artifactId>zippy-sys-service</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>

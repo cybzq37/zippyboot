@@ -1,4 +1,4 @@
-# ZippyBoot SYS 模块实施计划
+# Zippy SYS 模块实施计划
 
 ## 1. 目标
 
@@ -7,31 +7,31 @@
 ## 2. 模块结构
 
 ```
-zippyboot (root)
-├── zippyboot-common           ← 公共基础 (BaseEntity / 工具类 / 异常)
-├── zippyboot-infra            ← 基础设施 (mybatis / redis / satoken)
+zippy (root)
+├── zippy-common           ← 公共基础 (BaseEntity / 工具类 / 异常)
+├── zippy-infra            ← 基础设施 (mybatis / redis / satoken)
 ├── apis/                      ← API 契约库
-│   └── zippyboot-sys-api      ← DTO / VO / Feign 接口
+│   └── zippy-sys-api      ← DTO / VO / Feign 接口
 ├── services/                  ← 可独立运行的服务
-│   └── zippyboot-sys-service  ← 【新建】系统管理服务 (entity / service / mapper / controller / main)
-└── zippyboot-app              ← 其他应用，通过 sys-api 调用 sys-service
+│   └── zippy-sys-service  ← 【新建】系统管理服务 (entity / service / mapper / controller / main)
+└── zippy-app              ← 其他应用，通过 sys-api 调用 sys-service
 ```
 
 **依赖链路：**
 ```
-zippyboot-sys-service (独立运行)
-  ├── zippyboot-common
-  ├── zippyboot-infra-mybatis
-  ├── zippyboot-infra-redis
-  └── zippyboot-infra-satoken
+zippy-sys-service (独立运行)
+  ├── zippy-common
+  ├── zippy-infra-mybatis
+  ├── zippy-infra-redis
+  └── zippy-infra-satoken
 
-zippyboot-app (其他应用)
-  └── zippyboot-sys-api          ← 通过 Feign 调用 sys-service
+zippy-app (其他应用)
+  └── zippy-sys-api          ← 通过 Feign 调用 sys-service
 ```
 
 **设计决策：**
-- zippyboot-sys-service 可独立启动，同时暴露 REST API 供其他应用调用
-- zippyboot-sys-api 只放对外契约 (DTO/VO/FeignClient)，不包含 Entity
+- zippy-sys-service 可独立启动，同时暴露 REST API 供其他应用调用
+- zippy-sys-api 只放对外契约 (DTO/VO/FeignClient)，不包含 Entity
 - Entity 是 sys-service 内部实现，不暴露给外部；Controller 中做 Entity ↔ DTO 转换
 - Controller 和 FeignClient 各自独立定义，通过 HTTP 路径和返回类型对齐（松耦合），不通过代码级接口实现绑定
 - 其他应用依赖 sys-api 即可通过 Feign 调用，无需感知数据库模型
@@ -178,7 +178,7 @@ UNIQUE: (user_id, org_id)
 
 ## 4. 包结构
 
-### 4.1 zippyboot-sys-service — `com.zippyboot.sys`
+### 4.1 zippy-sys-service — `com.zippy.sys`
 
 Entity 为内部实现，不暴露给外部模块。
 
@@ -248,7 +248,7 @@ controller/
 
 公共字段抽取 `BaseEntity`（id, version, deleted, createBy, createTime, updateBy, updateTime），所有实体继承。
 
-### 4.2 apis/zippyboot-sys-api — `com.zippyboot.api.sys`
+### 4.2 apis/zippy-sys-api — `com.zippy.api.sys`
 
 只放对外契约，不包含 Entity。
 
@@ -311,7 +311,7 @@ public class SysAutoConfiguration {
 | `sys:menu:user:{userId}` | List\<MenuTreeDTO\> JSON | 30min | 权限变更 |
 | `sys:user:info:{userId}` | LoginUserDTO JSON | 30min | 用户信息变更 |
 
-使用 `zippyboot-infra-redis` 的 `RedisClient` 操作。
+使用 `zippy-infra-redis` 的 `RedisClient` 操作。
 
 ### 5.3 LoginHelper 复用
 
@@ -394,36 +394,36 @@ public interface SysUserMapper extends BaseMapper<SysUser> {
 
 ## 8. POM 配置
 
-### 8.1 apis/zippyboot-sys-api/pom.xml
+### 8.1 apis/zippy-sys-api/pom.xml
 
 ```xml
 <parent>
-    <groupId>com.zippyboot</groupId>
-    <artifactId>zippyboot</artifactId>
+    <groupId>com.zippy</groupId>
+    <artifactId>zippy</artifactId>
     <version>1.0.0-SNAPSHOT</version>
 </parent>
-<artifactId>zippyboot-sys-api</artifactId>
+<artifactId>zippy-sys-api</artifactId>
 
 <dependencies>
     <dependency><groupId>org.springframework.cloud</groupId><artifactId>spring-cloud-starter-openfeign</artifactId></dependency>
 </dependencies>
 ```
 
-### 8.2 services/zippyboot-sys-service/pom.xml
+### 8.2 services/zippy-sys-service/pom.xml
 
 ```xml
 <parent>
-    <groupId>com.zippyboot</groupId>
-    <artifactId>zippyboot</artifactId>
+    <groupId>com.zippy</groupId>
+    <artifactId>zippy</artifactId>
     <version>1.0.0-SNAPSHOT</version>
 </parent>
-<artifactId>zippyboot-sys-service</artifactId>
+<artifactId>zippy-sys-service</artifactId>
 
 <dependencies>
-    <dependency><groupId>com.zippyboot</groupId><artifactId>zippyboot-sys-api</artifactId></dependency>
-    <dependency><groupId>com.zippyboot</groupId><artifactId>zippyboot-infra-mybatis</artifactId></dependency>
-    <dependency><groupId>com.zippyboot</groupId><artifactId>zippyboot-infra-redis</artifactId></dependency>
-    <dependency><groupId>com.zippyboot</groupId><artifactId>zippyboot-infra-satoken</artifactId></dependency>
+    <dependency><groupId>com.zippy</groupId><artifactId>zippy-sys-api</artifactId></dependency>
+    <dependency><groupId>com.zippy</groupId><artifactId>zippy-infra-mybatis</artifactId></dependency>
+    <dependency><groupId>com.zippy</groupId><artifactId>zippy-infra-redis</artifactId></dependency>
+    <dependency><groupId>com.zippy</groupId><artifactId>zippy-infra-satoken</artifactId></dependency>
     <dependency><groupId>org.springframework.boot</groupId><artifactId>spring-boot-starter-web</artifactId></dependency>
     <dependency><groupId>org.springframework.boot</groupId><artifactId>spring-boot-starter-validation</artifactId></dependency>
     <dependency><groupId>org.springframework.security</groupId><artifactId>spring-security-crypto</artifactId></dependency>
@@ -435,18 +435,18 @@ public interface SysUserMapper extends BaseMapper<SysUser> {
 
 ```xml
 <!-- modules 中新增 -->
-<module>apis/zippyboot-sys-api</module>
-<module>services/zippyboot-sys-service</module>
+<module>apis/zippy-sys-api</module>
+<module>services/zippy-sys-service</module>
 
 <!-- dependencyManagement 中新增 -->
 <dependency>
-    <groupId>com.zippyboot</groupId>
-    <artifactId>zippyboot-sys-api</artifactId>
+    <groupId>com.zippy</groupId>
+    <artifactId>zippy-sys-api</artifactId>
     <version>${project.version}</version>
 </dependency>
 <dependency>
-    <groupId>com.zippyboot</groupId>
-    <artifactId>zippyboot-sys-service</artifactId>
+    <groupId>com.zippy</groupId>
+    <artifactId>zippy-sys-service</artifactId>
     <version>${project.version}</version>
 </dependency>
 ```
@@ -458,13 +458,13 @@ public interface SysUserMapper extends BaseMapper<SysUser> {
 | Phase | 内容 | 产出 |
 |-------|------|------|
 | **1** | 建表 SQL + model 实体 + 枚举 | SQL 脚本, 8 个实体, 7 个枚举, BaseEntity |
-| **2** | 模块骨架 | zippyboot-sys-service POM, SysAutoConfiguration, 8 个 Mapper 接口 |
+| **2** | 模块骨架 | zippy-sys-service POM, SysAutoConfiguration, 8 个 Mapper 接口 |
 | **3** | 用户管理 | SysUserService (CRUD/注册/登录), PasswordUtils, LoginHelper 集成 |
 | **4** | 角色 + 权限管理 | SysRoleService, SysPermissionService, SaPermissionDelegate |
 | **5** | 组织机构 | SysOrganizationService + TreeBuilder 集成 |
 | **6** | 资源管理 | SysResourceService |
 | **7** | 缓存层 | PermissionManager 缓存 + 失效策略 |
-| **8** | API 层 | zippyboot-sys-api DTO/VO/Feign + Controller |
+| **8** | API 层 | zippy-sys-api DTO/VO/Feign + Controller |
 
 ---
 
@@ -474,4 +474,4 @@ public interface SysUserMapper extends BaseMapper<SysUser> {
 
 2. **Sa-Token Session 数据量** — `LoginUserDTO` 序列化存入 Redis Session，应精简字段，避免存入大对象。
 
-3. **现有 MyBatis Mapper 扫描** — sys-service 的 Mapper 需要被 `@MapperScan` 覆盖。检查 infra-mybatis 的扫描路径是否包含 `com.zippyboot.sys.mapper`，否则需在 SysAutoConfiguration 中额外配置。
+3. **现有 MyBatis Mapper 扫描** — sys-service 的 Mapper 需要被 `@MapperScan` 覆盖。检查 infra-mybatis 的扫描路径是否包含 `com.zippy.sys.mapper`，否则需在 SysAutoConfiguration 中额外配置。

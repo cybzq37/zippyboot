@@ -1,33 +1,34 @@
-# zippyboot
+# zippy
 
 Java 21 + Spring Boot 3.5.x
 
 ## Modules
 
-- zippyboot-api: 公共接口定义，服务直接通过api相互调用，Feign接口、请求/响应DTO
-- zippyboot-app: 主业务应用，主要是controller 和 service
-- zippyboot-model: 共享的PO、DTO 和其他 model objects，与组件无关
-- zippyboot-infra: 集成组件配置 (Redis/Kafka/Postgres/MyBatis-Plus/GeoTools/Elasticsearch)
-- zippyboot-kit: 公共的 utility toolkit
-- zippyboot-netty: 单独的netty服务，可通过zippyboot-api 与其他应用交互 (TCP/UDP server)
+- zippy-kit: 公共 utility toolkit (Jackson / OkHttp / Id 生成器 / 通用 DTO)
+- zippy-infra: 基础设施 (Redis / Kafka / MyBatis / ES / Storage / Geo / Web / Sa-Token)
+- zippy-api: API 契约 (DTO / HttpExchange 接口)
+  - zippy-sys-api: 系统管理 API
+- zippy-svc: 服务实现
+  - zippy-sys-service: 系统管理服务
+  - zippy-netty-service: Netty 服务
+- zippy-demo: 示例应用
 
 ## Tech Stack
 
 - Java 21
 - Spring Boot 3.5.x
-- Redis
-- Kafka
-- PostgreSQL
+- Redis (optional)
+- Kafka (optional)
+- PostgreSQL / H2
 - MyBatis-Plus
 - GeoTools
-- Elasticsearch
+- Elasticsearch (optional)
 - Sa-Token
 - JUnit
 - Lombok
 - Netty
 - SpringDoc
 - log4j2
-- lombok
 
 ## Build
 
@@ -38,11 +39,11 @@ mvn clean package
 ## Run
 
 ```bash
-mvn -pl zippyboot-app spring-boot:run
+mvn -pl zippy-demo spring-boot:run
 ```
 
 ```bash
-mvn -pl zippyboot-netty spring-boot:run
+mvn -pl zippy-svc/zippy-netty-service spring-boot:run
 ```
 
 ## API Docs
@@ -66,8 +67,8 @@ sa-token:
   token-style: uuid       # token 风格：uuid/simple-uuid/random-32/random-64/random-128/tik
   is-log: true            # 是否输出操作日志
 
-# zippyboot 扩展配置
-zippyboot:
+# zippy 扩展配置
+zippy:
   satoken:
     enabled: true           # 是否启用（默认 true）
     login-type: login       # 登录类型标识
@@ -87,11 +88,11 @@ mybatis-plus:
 # 通过日志级别控制 SQL 打印开关
 logging:
   level:
-    com.zippyboot.**.mapper: debug   # 开启 SQL 打印
-    # com.zippyboot.**.mapper: info  # 关闭 SQL 打印
+    com.zippy.**.mapper: debug   # 开启 SQL 打印
+    # com.zippy.**.mapper: info  # 关闭 SQL 打印
 
-# zippyboot 扩展配置
-zippyboot:
+# zippy 扩展配置
+zippy:
   mybatis:
     enabled: true   # 是否启用 MyBatis 扩展（默认 true）
 ```
@@ -99,29 +100,28 @@ zippyboot:
 ### Storage
 
 ```yaml
-zippyboot:
-  infra:
-    storage:
-      enabled: true
-      # LOCAL | S3
-      type: LOCAL
-      public-base-url: ""
-      date-path-pattern: yyyy/MM/dd
-      # UUID | ORIGINAL
-      filename-strategy: UUID
-      # APPEND_SUFFIX | FAIL | OVERWRITE
-      conflict-strategy: APPEND_SUFFIX
-      local:
-        root-path: ./uploads
-        access-path-prefix: /uploads
-      s3:
-        bucket: zippyboot
-        endpoint: ""
-        region: us-east-1
-        access-key: ""
-        secret-key: ""
-        domain: ""
-        path-style-access: true
+zippy:
+  storage:
+    enabled: true
+    # LOCAL | S3
+    type: LOCAL
+    public-base-url: ""
+    date-path-pattern: yyyy/MM/dd
+    # UUID | ORIGINAL
+    filename-strategy: UUID
+    # APPEND_SUFFIX | FAIL | OVERWRITE
+    conflict-strategy: APPEND_SUFFIX
+    local:
+      root-path: ./uploads
+      access-path-prefix: /uploads
+    s3:
+      bucket: zippy
+      endpoint: ""
+      region: us-east-1
+      access-key: ""
+      secret-key: ""
+      domain: ""
+      path-style-access: true
 ```
 
 ## Version Management
@@ -129,21 +129,23 @@ zippyboot:
 项目为三层多模块结构，所有模块共享同一版本号，由根 POM 统一管理：
 
 ```
-zippyboot (root)
-├── zippyboot-api
-├── zippyboot-app
-├── zippyboot-model
-├── zippyboot-kit
-├── zippyboot-netty
-└── zippyboot-infra
-    ├── zippyboot-infra-redis
-    ├── zippyboot-infra-kafka
-    ├── zippyboot-infra-es
-    ├── zippyboot-infra-mybatis
-    ├── zippyboot-infra-storage
-    ├── zippyboot-infra-geo
-    ├── zippyboot-infra-web
-    └── zippyboot-infra-satoken
+zippy (root)
+├── zippy-kit
+├── zippy-infra
+│   ├── zippy-infra-redis
+│   ├── zippy-infra-kafka
+│   ├── zippy-infra-es
+│   ├── zippy-infra-mybatis
+│   ├── zippy-infra-storage
+│   ├── zippy-infra-geo
+│   ├── zippy-infra-web
+│   └── zippy-infra-satoken
+├── zippy-api
+│   └── zippy-sys-api
+├── zippy-svc
+│   ├── zippy-sys-service
+│   └── zippy-netty-service
+└── zippy-demo
 ```
 
 各子模块通过 `<parent>` 继承版本，内部依赖通过根 POM 的 `dependencyManagement` + `${project.version}` 统一管理，无需在子模块中硬编码版本。
@@ -167,47 +169,3 @@ mvn versions:commit
 ```bash
 mvn versions:revert
 ```
-
-
-还缺少定时任务模块
-
-
-整体以zippy为代号，
-zippyboot
-zippyframe
-zippykit
-zippycore
-zippystack
-zippyhub
-zippystarter
-zippylanucher
-zippygenesis
-zippynexus
-
-zippy-api
-zippy-model
-zippy-kit
-zippy-infra
-zippy-app
-
-
-zippyboot-api
-zippyboot-model
-zippyboot-kit
-zippyboot-infra
-zippyboot-app
-
-
-
-
-- 现在很多方法仍然直接 throws Exception，后面如果被 controller/service 直接调用，异常边界会比较粗。
-
-
-主流分级（标准 RBAC）
-RBAC0：基础版（用户 - 角色 - 权限），90% 业务系统在用
-RBAC1：增加角色继承（父子角色）
-RBAC2：增加角色互斥、约束（如一人不能同时兼任出纳 + 会计）
-RBAC3：整合继承 + 约束，完整标准模型
-
-
-实现 RBAC1

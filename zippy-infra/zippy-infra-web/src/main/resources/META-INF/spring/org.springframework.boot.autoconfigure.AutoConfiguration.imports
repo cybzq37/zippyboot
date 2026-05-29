@@ -1,0 +1,2 @@
+com.zippy.infra.web.exception.GlobalExceptionAutoConfiguration
+com.zippy.infra.web.response.ResponseAutoConfiguration
