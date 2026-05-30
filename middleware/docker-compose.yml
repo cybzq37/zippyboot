@@ -63,39 +63,12 @@ services:
           memory: 1G
           cpus: "2.0"
     shm_size: 256m
-    depends_on:
-      init-permissions:
-        condition: service_completed_successfully
     healthcheck:
       test: ["CMD-SHELL", "PGPASSWORD=${POSTGRES_PASSWORD} pg_isready -U postgres -d zyn_base"]
       interval: 10s
       timeout: 5s
       retries: 5
       start_period: 15s
-
-  # --- 初始化 ------------------------------------------------
-  # 首次启动自动修复目录权限，执行一次后退出
-
-  init-permissions:
-    image: busybox:1.37
-    restart: "no"
-    user: root
-    entrypoint: /bin/sh
-    command: >
-      -c "
-        mkdir -p /pg-logs /redis-logs /kafka-data /es-data /es-logs;
-        chown -R 999:999   /pg-logs /redis-logs;
-        chown -R 1000:1000 /kafka-data /es-data /es-logs;
-        echo 'Permissions fixed.';
-      "
-    volumes:
-      - ./postgres/logs:/pg-logs
-      - ./redis/logs:/redis-logs
-      - ./kafka/data:/kafka-data
-      - ./elasticsearch/data:/es-data
-      - ./elasticsearch/logs:/es-logs
-    networks:
-      - zyn-net
 
   # --- 缓存 --------------------------------------------------
 
@@ -130,9 +103,6 @@ services:
         limits:
           memory: 512M
           cpus: "1.0"
-    depends_on:
-      init-permissions:
-        condition: service_completed_successfully
     healthcheck:
       test: ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD}", "ping"]
       interval: 10s
@@ -184,7 +154,7 @@ services:
           memory: 2G
           cpus: "2.0"
     healthcheck:
-      test: ["CMD-SHELL", "kafka-broker-api-versions.sh --bootstrap-server localhost:9092 > /dev/null 2>&1"]
+      test: ["CMD-SHELL", "/opt/kafka/bin/kafka-broker-api-versions.sh --bootstrap-server localhost:9092 > /dev/null 2>&1"]
       interval: 15s
       timeout: 10s
       retries: 5
@@ -236,7 +206,7 @@ services:
 
   seaweedfs-master:
     <<: *common
-    image: chrislusf/seaweedfs:3.78
+    image: chrislusf/seaweedfs:4.29
     environment:
       TZ: Asia/Shanghai
       LANG: C.UTF-8
@@ -255,7 +225,7 @@ services:
           memory: 512M
           cpus: "1.0"
     healthcheck:
-      test: ["CMD-SHELL", "wget -q --spider http://localhost:9333/cluster/status || exit 1"]
+      test: ["CMD-SHELL", "wget -q --spider http://127.0.0.1:9333/cluster/status || exit 1"]
       interval: 15s
       timeout: 5s
       retries: 5
@@ -263,12 +233,13 @@ services:
 
   seaweedfs-volume:
     <<: *common
-    image: chrislusf/seaweedfs:3.78
+    image: chrislusf/seaweedfs:4.29
     environment:
       TZ: Asia/Shanghai
       LANG: C.UTF-8
     command: volume
       -port=8080
+      -ip.bind=0.0.0.0
       -mserver=seaweedfs-master:9333
       -dir=/data
       -max=10
@@ -287,26 +258,26 @@ services:
           memory: 1G
           cpus: "1.0"
     healthcheck:
-      test: ["CMD-SHELL", "wget -q --spider http://localhost:8080/status || exit 1"]
+      test: ["CMD-SHELL", "wget -q --spider http://127.0.0.1:8080/status || exit 1"]
       interval: 15s
       timeout: 5s
       retries: 5
       start_period: 20s
 
-  seaweedfs-s3:
+  seaweedfs-filer:
     <<: *common
-    image: chrislusf/seaweedfs:3.78
+    image: chrislusf/seaweedfs:4.29
     environment:
       TZ: Asia/Shanghai
       LANG: C.UTF-8
-    command: s3
+    command: filer
+      -port=8888
+      -ip.bind=0.0.0.0
       -master=seaweedfs-master:9333
-      -port=8333
-      -config=/etc/seaweedfs/s3.conf
     ports:
-      - "8333:8333"
+      - "8888:8888"
     volumes:
-      - ./seaweedfs/s3.conf:/etc/seaweedfs/s3.conf:ro
+      - ./seaweedfs/filer/data:/data
     depends_on:
       seaweedfs-master:
         condition: service_healthy
@@ -318,7 +289,36 @@ services:
           memory: 512M
           cpus: "1.0"
     healthcheck:
-      test: ["CMD-SHELL", "wget -q --spider http://localhost:8333/ || exit 1"]
+      test: ["CMD-SHELL", "wget -q --spider http://127.0.0.1:8888/ || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
+
+  seaweedfs-s3:
+    <<: *common
+    image: chrislusf/seaweedfs:4.29
+    environment:
+      TZ: Asia/Shanghai
+      LANG: C.UTF-8
+    command: s3
+      -filer=seaweedfs-filer:8888
+      -port=8333
+      -config=/etc/seaweedfs/s3.conf
+    ports:
+      - "8333:8333"
+    volumes:
+      - ./seaweedfs/s3.conf:/etc/seaweedfs/s3.conf:ro
+    depends_on:
+      seaweedfs-filer:
+        condition: service_healthy
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+          cpus: "1.0"
+    healthcheck:
+      test: ["CMD-SHELL", "nc -z 127.0.0.1 8333 || exit 1"]
       interval: 15s
       timeout: 5s
       retries: 5
@@ -362,7 +362,7 @@ services:
           memory: 512M
           cpus: "1.0"
     healthcheck:
-      test: ["CMD-SHELL", "curl -sf http://localhost:9000 || exit 1"]
+      test: ["CMD-SHELL", "wget -q --spider http://127.0.0.1:9000 || exit 1"]
       interval: 15s
       timeout: 5s
       retries: 5

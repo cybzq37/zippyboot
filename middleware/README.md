@@ -11,7 +11,7 @@ Zyn 项目中间件服务，基于 Docker Compose 统一管理。
 | Kafka | apache/kafka:3.7.1 | 9092 | 消息队列 |
 | Elasticsearch | 自定义构建（含 IK/Pinyin/STConvert） | 9200 | 全文检索 |
 | INFINI Console | infinilabs/console:1.30.2-2396 | 9000 | ES 可视化管理 |
-| SeaweedFS | chrislusf/seaweedfs:3.78 | 8333 | S3 对象存储 |
+| SeaweedFS | chrislusf/seaweedfs:4.29 | 8333 | S3 对象存储 |
 
 ## 快速开始
 
@@ -39,15 +39,29 @@ docker-compose build elasticsearch
 ### 4. 启动所有服务
 
 ```bash
+# 推荐：使用启动脚本（自动修复权限）
+sudo ./start.sh
+
+# 或手动启动
 docker-compose up -d
 ```
 
-### 5. 权限修复（如 ES 报 Permission denied）
+### 5. 权限说明
 
-ES 容器以 `elasticsearch` 用户（UID 1000）运行，首次启动如遇数据目录写入权限问题：
+Docker 挂载的宿主机目录默认由 root 创建，容器内非 root 用户无法写入。`start.sh` 会自动处理以下目录权限：
+
+| 服务 | 目录 | UID |
+|------|------|-----|
+| PostgreSQL | postgres/logs | 999 |
+| Redis | redis/logs | 999 |
+| Kafka | kafka/data | 1000 |
+| Elasticsearch | elasticsearch/data, elasticsearch/logs | 1000 |
+
+手动修复命令：
 
 ```bash
-sudo chown -R 1000:1000 elasticsearch/data
+sudo chown -R 999:999   postgres/logs redis/logs
+sudo chown -R 1000:1000 kafka/data elasticsearch/data elasticsearch/logs
 ```
 
 ### 5. 验证服务状态
