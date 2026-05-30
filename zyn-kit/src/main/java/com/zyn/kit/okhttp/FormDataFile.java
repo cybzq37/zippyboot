@@ -3,6 +3,7 @@ package com.zyn.kit.okhttp;
 import com.zyn.kit.util.StringUtils;
 
 import java.io.File;
+import java.nio.file.Path;
 
 public record FormDataFile(String fieldName, String contentType, String fileName, byte[] fileData, File file) {
 
@@ -29,6 +30,14 @@ public record FormDataFile(String fieldName, String contentType, String fileName
 
     public static FormDataFile ofFile(String fieldName, String fileName, String contentType, File file) {
         return new FormDataFile(fieldName, contentType, fileName, null, file);
+    }
+
+    public static FormDataFile ofPath(String fieldName, Path path) {
+        return new FormDataFile(fieldName, DEFAULT_CONTENT_TYPE, null, null, path.toFile());
+    }
+
+    public static FormDataFile ofPath(String fieldName, String contentType, Path path) {
+        return new FormDataFile(fieldName, contentType, null, null, path.toFile());
     }
 
     private static String resolveFileName(String fileName, File file) {
