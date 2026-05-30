@@ -168,7 +168,8 @@ services:
     image: zyn-elasticsearch:8.15.3
     environment:
       - discovery.type=single-node
-      - xpack.security.enabled=false
+      - xpack.security.enabled=true
+      - ELASTIC_PASSWORD=${ELASTIC_PASSWORD}
       - ES_JAVA_OPTS=-Xms1g -Xmx1g -Duser.timezone=Asia/Shanghai -Dfile.encoding=UTF-8
       - TZ=Asia/Shanghai
       - LANG=C.UTF-8
@@ -196,7 +197,7 @@ services:
           memory: 2G
           cpus: "2.0"
     healthcheck:
-      test: ["CMD-SHELL", "curl -sf http://localhost:9200/_cluster/health || exit 1"]
+      test: ["CMD-SHELL", "curl -sf -u elastic:${ELASTIC_PASSWORD} http://localhost:9200/_cluster/health || exit 1"]
       interval: 15s
       timeout: 10s
       retries: 5

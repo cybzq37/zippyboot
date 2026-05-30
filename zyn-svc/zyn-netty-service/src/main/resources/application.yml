@@ -1,5 +1,5 @@
 server:
-  port: 18081
+  port: 28082
 
 spring:
   application:
@@ -12,8 +12,8 @@ zyn:
     tcp:
       enabled: true
       host: 0.0.0.0
-      port: 19090
+      port: 29090
     udp:
       enabled: true
       host: 0.0.0.0
-      port: 19091
+      port: 29091

@@ -213,6 +213,6 @@ docker-compose up -d
 |------|--------|------|
 | PostgreSQL | postgres | 见 .env POSTGRES_PASSWORD |
 | Redis | - | 见 .env REDIS_PASSWORD |
+| Elasticsearch | elastic | 见 .env ELASTIC_PASSWORD |
 | SeaweedFS S3 | 见 .env S3_ACCESS_KEY | 见 .env S3_SECRET_KEY |
-| Elasticsearch | - | 已关闭鉴权 |
 | INFINI Console | admin | 见 .env POSTGRES_PASSWORD（统一密码） |

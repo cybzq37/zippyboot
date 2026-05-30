@@ -13,8 +13,8 @@ public final class IdUtils {
 
     private static final String WORKER_ID_KEY = "zyn.id.worker-id";
     private static final String DATACENTER_ID_KEY = "zyn.id.datacenter-id";
-    private static final String WORKER_ID_ENV = "ZIPPY_ID_WORKER_ID";
-    private static final String DATACENTER_ID_ENV = "ZIPPY_ID_DATACENTER_ID";
+    private static final String WORKER_ID_ENV = "ZYN_ID_WORKER_ID";
+    private static final String DATACENTER_ID_ENV = "ZYN_ID_DATACENTER_ID";
 
     private static final char[] BASE62 = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz".toCharArray();
 
@@ -164,9 +164,10 @@ public final class IdUtils {
 
         private final long workerId;
         private final long datacenterId;
+        private final long idBase;
 
-        private long sequence = 0L;
-        private long lastTimestamp = -1L;
+        // 打包 lastTimestamp(高52位) + sequence(低12位)，用 CAS 原子更新
+        private final AtomicLong state = new AtomicLong(-1L);
 
         private Snowflake(long workerId, long datacenterId) {
             if (workerId > MAX_WORKER_ID || workerId < 0) {
@@ -177,35 +178,45 @@ public final class IdUtils {
             }
             this.workerId = workerId;
             this.datacenterId = datacenterId;
+            this.idBase = (datacenterId << DATACENTER_ID_SHIFT) | (workerId << WORKER_ID_SHIFT);
         }
 
-        private synchronized long nextId() {
-            long timestamp = timeGen();
+        private long nextId() {
+            while (true) {
+                long current = state.get();
+                long lastTs = current >>> SEQUENCE_BITS;
+                long seq = current & SEQUENCE_MASK;
+                long now = timeGen();
 
-            if (timestamp < lastTimestamp) {
-                throw new IllegalStateException("Clock moved backwards. Refusing to generate id");
-            }
-
-            if (timestamp == lastTimestamp) {
-                sequence = (sequence + 1) & SEQUENCE_MASK;
-                if (sequence == 0) {
-                    timestamp = tilNextMillis(lastTimestamp);
+                if (now < lastTs) {
+                    throw new IllegalStateException("Clock moved backwards. Refusing to generate id");
                 }
-            } else {
-                sequence = 0L;
+
+                long nextSeq;
+                long nextTs;
+                if (now == lastTs) {
+                    nextSeq = (seq + 1) & SEQUENCE_MASK;
+                    if (nextSeq == 0) {
+                        nextTs = tilNextMillis(lastTs);
+                    } else {
+                        nextTs = now;
+                    }
+                } else {
+                    nextSeq = 0;
+                    nextTs = now;
+                }
+
+                long next = (nextTs << SEQUENCE_BITS) | nextSeq;
+                if (state.compareAndSet(current, next)) {
+                    return ((nextTs - EPOCH) << TIMESTAMP_LEFT_SHIFT) | idBase | nextSeq;
+                }
             }
-
-            lastTimestamp = timestamp;
-
-            return ((timestamp - EPOCH) << TIMESTAMP_LEFT_SHIFT)
-                    | (datacenterId << DATACENTER_ID_SHIFT)
-                    | (workerId << WORKER_ID_SHIFT)
-                    | sequence;
         }
 
         private long tilNextMillis(long lastTimestamp) {
             long timestamp = timeGen();
             while (timestamp <= lastTimestamp) {
+                Thread.onSpinWait();
                 timestamp = timeGen();
             }
             return timestamp;

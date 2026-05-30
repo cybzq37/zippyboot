@@ -6,5 +6,5 @@
 zyn:
   discovery:
     services:
-      sys: http://zyn-sys:8081
-      netty: http://zyn-netty:18081
+      sys: http://localhost:28081
+      netty: http://localhost:28082

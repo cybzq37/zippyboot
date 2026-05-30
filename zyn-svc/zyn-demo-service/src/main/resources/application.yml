@@ -1,5 +1,5 @@
 server:
-  port: 8080
+  port: 28080
 
 spring:
   application:
@@ -35,8 +35,8 @@ spring:
     # ==================== Elasticsearch ====================
     elasticsearch:
       uris: http://localhost:9200
-      # username:
-      # password:
+      username: elastic
+      password: Zyn@Secure#99
       # connection-timeout: 1s
       # socket-timeout: 30s
 

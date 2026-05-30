@@ -2,7 +2,6 @@ package com.zyn.infra.redis;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
 import org.springframework.data.redis.core.Cursor;
 import org.springframework.data.redis.core.RedisCallback;
 import org.springframework.data.redis.core.ScanOptions;
@@ -22,7 +21,6 @@ import java.util.UUID;
 
 @Component
 @RequiredArgsConstructor
-@ConditionalOnBean(StringRedisTemplate.class)
 public class RedisClient {
 
     private static final DefaultRedisScript<Long> UNLOCK_SCRIPT = new DefaultRedisScript<>(
