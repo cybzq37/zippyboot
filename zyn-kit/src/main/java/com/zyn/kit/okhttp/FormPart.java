@@ -8,7 +8,7 @@ import java.nio.file.Path;
 /**
  * 表单文件数据，支持三种来源：字节数组、File、Path。
  */
-public sealed interface FormDataFile {
+public sealed interface FormPart {
 
     String DEFAULT_CONTENT_TYPE = "application/octet-stream";
     String DEFAULT_FIELD_NAME = "file";
@@ -19,15 +19,15 @@ public sealed interface FormDataFile {
 
     // ==================== 字节数组 ====================
 
-    record Bytes(String fieldName, String contentType, String fileName, byte[] data) implements FormDataFile {}
+    record Bytes(String fieldName, String contentType, String fileName, byte[] data) implements FormPart {}
 
     // ==================== File ====================
 
-    record FileRef(String fieldName, String contentType, String fileName, File file) implements FormDataFile {}
+    record FileRef(String fieldName, String contentType, String fileName, File file) implements FormPart {}
 
     // ==================== Path ====================
 
-    record PathRef(String fieldName, String contentType, String fileName, Path path) implements FormDataFile {}
+    record PathRef(String fieldName, String contentType, String fileName, Path path) implements FormPart {}
 
     // ==================== 工厂方法 ====================
 

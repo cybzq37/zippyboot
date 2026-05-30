@@ -55,7 +55,7 @@ public class RequestBuilder {
     private String xmlBody;
     private String textBody;
     private Map<String, String> formFields;
-    private List<FormDataFile> files;
+    private List<FormPart> files;
     private byte[] binaryBody;
     private InputStream streamBody;
     private String streamFileName;
@@ -118,12 +118,12 @@ public class RequestBuilder {
         return this;
     }
 
-    public RequestBuilder file(FormDataFile file) {
+    public RequestBuilder file(FormPart file) {
         this.files = List.of(file);
         return this;
     }
 
-    public RequestBuilder files(List<FormDataFile> files) {
+    public RequestBuilder files(List<FormPart> files) {
         this.files = files;
         return this;
     }
@@ -258,13 +258,13 @@ public class RequestBuilder {
         // Multipart (files, optionally with fields)
         if (files != null) {
             MultipartBody.Builder mb = new MultipartBody.Builder().setType(MultipartBody.FORM);
-            for (FormDataFile f : files) {
+            for (FormPart f : files) {
                 if (f == null) continue;
                 MediaType mt = MediaType.parse(f.contentType());
                 RequestBody rb = switch (f) {
-                    case FormDataFile.Bytes b -> RequestBody.create(b.data(), mt);
-                    case FormDataFile.FileRef fr -> RequestBody.create(fr.file(), mt);
-                    case FormDataFile.PathRef pr -> RequestBody.create(pr.path().toFile(), mt);
+                    case FormPart.Bytes b -> RequestBody.create(b.data(), mt);
+                    case FormPart.FileRef fr -> RequestBody.create(fr.file(), mt);
+                    case FormPart.PathRef pr -> RequestBody.create(pr.path().toFile(), mt);
                 };
                 mb.addFormDataPart(f.fieldName(), f.fileName(), rb);
             }
