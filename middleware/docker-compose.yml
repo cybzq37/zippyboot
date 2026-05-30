@@ -212,7 +212,7 @@ services:
       LANG: C.UTF-8
     command: master
       -port=9333
-      -volumeSizeLimitMB=1024
+      -volumeSizeLimitMB=30000
       -volumePreallocate=false
       -garbageThreshold=0.3
     ports:
@@ -245,6 +245,7 @@ services:
       -max=10
       -disk=hdd
       -fileSizeLimitMB=256
+      -index=leveldb
     ports:
       - "8080:8080"
     volumes:

@@ -130,14 +130,14 @@ class S3StorageBackendTest {
         backend.copy("docs/readme.txt", "archive/readme.txt");
 
         assertTrue(copiedTargets.contains("archive/readme.txt"));
-        assertEquals("https://files.s3.us-east-1.amazonaws.com/archive/readme.txt", backend.getAccessUrl("archive/readme.txt"));
+        assertEquals("https://files.s3.cn-north-1.amazonaws.com/archive/readme.txt", backend.getAccessUrl("archive/readme.txt"));
     }
 
     @Test
     void shouldEncodeAccessUrlForExplicitKey() {
         S3StorageBackend backend = new S3StorageBackend(stubProperties(), stubS3Client(), false);
 
-        assertEquals("https://files.s3.us-east-1.amazonaws.com/docs/%E6%B5%8B%E8%AF%95%20file.txt",
+        assertEquals("https://files.s3.cn-north-1.amazonaws.com/docs/%E6%B5%8B%E8%AF%95%20file.txt",
                 backend.getAccessUrl("docs/测试 file.txt"));
     }
 

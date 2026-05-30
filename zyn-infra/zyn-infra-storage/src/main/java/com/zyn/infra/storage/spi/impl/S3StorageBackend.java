@@ -99,7 +99,7 @@ public class S3StorageBackend implements StorageBackend, AutoCloseable {
             String contentType = StringUtils.hasText(response.contentType()) ? response.contentType() : "application/octet-stream";
             return new StoredObject(normalizedKey, contentType, size, inputStream);
         } catch (S3Exception exception) {
-            if (exception.statusCode() == 404 || exception.statusCode() == 403) {
+            if (exception.statusCode() == 404) {
                 throw new StorageObjectNotFoundException("Storage object not found: " + normalizedKey, exception);
             }
             throw new StorageBackendException("Failed to open object from S3: " + normalizedKey, exception);
@@ -120,7 +120,7 @@ public class S3StorageBackend implements StorageBackend, AutoCloseable {
             String contentType = StringUtils.hasText(response.contentType()) ? response.contentType() : "application/octet-stream";
             return new StoredObjectMetadata(normalizedKey, contentType, size, buildAccessUrl(normalizedKey));
         } catch (S3Exception exception) {
-            if (exception.statusCode() == 404 || exception.statusCode() == 403) {
+            if (exception.statusCode() == 404) {
                 throw new StorageObjectNotFoundException("Storage object not found: " + normalizedKey, exception);
             }
             throw new StorageBackendException("Failed to load object metadata from S3: " + normalizedKey, exception);
@@ -159,7 +159,7 @@ public class S3StorageBackend implements StorageBackend, AutoCloseable {
                     .copySource(encodeCopySource(s3Properties.getBucket(), normalizedSourceKey))
                     .build());
         } catch (S3Exception exception) {
-            if (exception.statusCode() == 404 || exception.statusCode() == 403) {
+            if (exception.statusCode() == 404) {
                 throw new StorageObjectNotFoundException("Storage object not found: " + normalizedSourceKey, exception);
             }
             throw new StorageBackendException("Failed to copy object in S3: " + normalizedSourceKey + " -> " + normalizedTargetKey, exception);

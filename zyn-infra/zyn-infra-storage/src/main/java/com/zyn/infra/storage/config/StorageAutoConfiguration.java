@@ -75,7 +75,7 @@ public class StorageAutoConfiguration {
     }
 
     @Bean("storageS3Client")
-    @ConditionalOnProperty(prefix = "zyn.infra.storage", name = "type", havingValue = "S3")
+    @ConditionalOnProperty(prefix = "zyn.storage", name = "type", havingValue = "S3")
     @ConditionalOnMissingBean(name = "storageS3Client")
     public S3Client storageS3Client(StorageProperties properties) {
         properties.validate();
@@ -83,7 +83,7 @@ public class StorageAutoConfiguration {
     }
 
     private S3Client buildS3Client(StorageProperties.S3Properties s3Properties) {
-        String regionName = StringUtils.hasText(s3Properties.getRegion()) ? s3Properties.getRegion().trim() : "us-east-1";
+        String regionName = StringUtils.hasText(s3Properties.getRegion()) ? s3Properties.getRegion().trim() : "cn-north-1";
         var builder = S3Client.builder().region(Region.of(regionName));
 
         if (StringUtils.hasText(s3Properties.getAccessKey()) || StringUtils.hasText(s3Properties.getSecretKey())) {

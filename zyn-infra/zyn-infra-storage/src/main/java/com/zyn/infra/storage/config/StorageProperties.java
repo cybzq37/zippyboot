@@ -67,7 +67,7 @@ public class StorageProperties {
     public static class S3Properties {
         private String bucket = "zyn";
         private String endpoint;
-        private String region = "us-east-1";
+        private String region = "cn-north-1";
         private String accessKey;
         private String secretKey;
         private String domain;
