@@ -62,6 +62,9 @@ zyn:
     services:
       sys: http://localhost:28081
       netty: http://localhost:28082
+  kit:
+    okhttp:
+      enable-log-interceptor: true
   storage:
     s3:
       endpoint: http://localhost:8333

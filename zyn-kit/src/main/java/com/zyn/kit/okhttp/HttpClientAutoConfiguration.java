@@ -22,7 +22,7 @@ public class HttpClientAutoConfiguration {
                 .callTimeout(properties.getCallTimeoutSeconds(), TimeUnit.SECONDS);
 
         if (properties.isEnableLogInterceptor()) {
-            builder.addInterceptor(new LoggingInterceptor());
+            builder.addInterceptor(new LoggingInterceptor(properties.getLogMaxBodyBytes(), properties.getLogMaxBodyChars()));
         }
 
         return builder.build();
@@ -31,6 +31,6 @@ public class HttpClientAutoConfiguration {
     @Bean
     @ConditionalOnMissingBean
     public HttpClient httpClient(OkHttpClient okHttpClient, HttpClientProperties properties) {
-        return new HttpClient(okHttpClient, properties.isThrowOnHttpError(), properties.getMaxResponseBytes());
+        return new HttpClient(okHttpClient, properties.isThrowOnHttpError());
     }
 }

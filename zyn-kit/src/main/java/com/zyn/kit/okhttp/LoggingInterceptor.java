@@ -24,10 +24,19 @@ import java.util.concurrent.TimeUnit;
 public class LoggingInterceptor implements Interceptor {
 
     private static final Logger log = LoggerFactory.getLogger(LoggingInterceptor.class);
-
     private static final Charset UTF8 = StandardCharsets.UTF_8;
-    private static final long FULL_BODY_LOG_MAX_BYTES = 2048;
-    private static final int FULL_BODY_LOG_MAX_CHARS = 2048;
+
+    private final int maxBodyBytes;
+    private final int maxBodyChars;
+
+    public LoggingInterceptor() {
+        this(8192, 8192);
+    }
+
+    public LoggingInterceptor(int maxBodyBytes, int maxBodyChars) {
+        this.maxBodyBytes = maxBodyBytes;
+        this.maxBodyChars = maxBodyChars;
+    }
 
     @Override
     public Response intercept(Chain chain) throws IOException {
@@ -94,20 +103,20 @@ public class LoggingInterceptor implements Interceptor {
         if (!isTextLike(mediaType)) {
             return "<binary request body, size=" + formatLength(contentLength) + ">";
         }
-        if (contentLength > FULL_BODY_LOG_MAX_BYTES) {
+        if (contentLength > maxBodyBytes) {
             return "<text request body too large, size=" + contentLength + " bytes>";
         }
 
         try {
             Buffer buffer = new Buffer();
             body.writeTo(buffer);
-            if (buffer.size() > FULL_BODY_LOG_MAX_BYTES) {
+            if (buffer.size() > maxBodyBytes) {
                 return "<text request body too large, size=" + buffer.size() + " bytes>";
             }
 
             Charset charset = mediaType != null ? mediaType.charset(UTF8) : UTF8;
             String text = buffer.readString(charset == null ? UTF8 : charset);
-            if (text.length() > FULL_BODY_LOG_MAX_CHARS) {
+            if (text.length() > maxBodyChars) {
                 return "<text request body too long, chars=" + text.length() + ">";
             }
             return text;
@@ -127,13 +136,13 @@ public class LoggingInterceptor implements Interceptor {
         if (!isTextLike(mediaType)) {
             return "<binary response body, size=" + formatLength(contentLength) + ">";
         }
-        if (contentLength > FULL_BODY_LOG_MAX_BYTES) {
+        if (contentLength > maxBodyBytes) {
             return "<text response body too large, size=" + contentLength + " bytes>";
         }
 
         try {
-            String text = response.peekBody(FULL_BODY_LOG_MAX_BYTES).string();
-            if (text.length() > FULL_BODY_LOG_MAX_CHARS) {
+            String text = response.peekBody(maxBodyBytes).string();
+            if (text.length() > maxBodyChars) {
                 return "<text response body too long, chars=" + text.length() + ">";
             }
             return text;

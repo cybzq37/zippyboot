@@ -67,7 +67,6 @@ public class HttpClient {
 
     private final OkHttpClient client;
     private final boolean throwOnHttpError;
-    private final long maxResponseBytes;
 
     public HttpClient() {
         this(new OkHttpClient.Builder()
@@ -75,7 +74,7 @@ public class HttpClient {
                 .readTimeout(HttpClientProperties.DEFAULT_READ_TIMEOUT_SECONDS, java.util.concurrent.TimeUnit.SECONDS)
                 .writeTimeout(HttpClientProperties.DEFAULT_WRITE_TIMEOUT_SECONDS, java.util.concurrent.TimeUnit.SECONDS)
                 .callTimeout(HttpClientProperties.DEFAULT_CALL_TIMEOUT_SECONDS, java.util.concurrent.TimeUnit.SECONDS)
-                .build(), false, HttpClientProperties.DEFAULT_MAX_RESPONSE_BYTES);
+                .build(), false);
     }
 
     public HttpClient(OkHttpClient client) {
@@ -83,16 +82,11 @@ public class HttpClient {
     }
 
     public HttpClient(OkHttpClient client, boolean throwOnHttpError) {
-        this(client, throwOnHttpError, HttpClientProperties.DEFAULT_MAX_RESPONSE_BYTES);
-    }
-
-    public HttpClient(OkHttpClient client, boolean throwOnHttpError, long maxResponseBytes) {
         if (client == null) {
             throw new IllegalArgumentException("OkHttpClient must not be null");
         }
         this.client = client;
         this.throwOnHttpError = throwOnHttpError;
-        this.maxResponseBytes = maxResponseBytes;
     }
 
     // ==================== GET ====================
@@ -369,15 +363,7 @@ public class HttpClient {
             if (body == null) {
                 return HttpResponse.success(response.code(), HttpResponse.toHeaderMap(response.headers()), null);
             }
-            long contentLength = body.contentLength();
-            if (contentLength > maxResponseBytes) {
-                body.close();
-                return HttpResponse.failure("Response body too large: " + contentLength + " bytes (max=" + maxResponseBytes + ")");
-            }
             String text = body.string();
-            if (text.length() > maxResponseBytes) {
-                return HttpResponse.failure("Response body too large: " + text.length() + " bytes (max=" + maxResponseBytes + ")");
-            }
             HttpResponse result = HttpResponse.success(
                     response.code(),
                     HttpResponse.toHeaderMap(response.headers()),

@@ -103,3 +103,5 @@ zyn:
       read-timeout-seconds: 10
       write-timeout-seconds: 10
       call-timeout-seconds: 30
+      enable-log-interceptor: false
+
