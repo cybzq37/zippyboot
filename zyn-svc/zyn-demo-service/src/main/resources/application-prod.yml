@@ -1,0 +1,26 @@
+# ──────────────────────────────────────────────────────────────
+# 生产环境 - Docker/K8s 内部通信
+# ──────────────────────────────────────────────────────────────
+
+spring:
+  datasource:
+    dynamic:
+      datasource:
+        master:
+          url: jdbc:postgresql://postgres:5432/zyn_base
+  data:
+    redis:
+      host: redis
+    elasticsearch:
+      uris: http://elasticsearch:9200
+  kafka:
+    bootstrap-servers: kafka:9092
+
+zyn:
+  discovery:
+    services:
+      sys: http://zyn-sys:28081
+      netty: http://zyn-netty:28082
+  storage:
+    s3:
+      endpoint: http://seaweedfs-s3:8333

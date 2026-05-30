@@ -4,10 +4,12 @@ server:
 spring:
   application:
     name: zyn-demo
+  profiles:
+    active: @spring.profiles.active@
   jackson:
     time-zone: Asia/Shanghai
 
-  # ==================== 数据源（dynamic-datasource 多数据源） ====================
+  # ==================== 数据源（由 profile 配置） ====================
   datasource:
     dynamic:
       primary: master
@@ -18,29 +20,21 @@ spring:
           password: Zyn@Secure#99
           driver-class-name: org.postgresql.Driver
 
-  # ==================== Redis ====================
+  # ==================== Redis（由 profile 配置） ====================
   data:
     redis:
       host: localhost
       port: 6379
       password: Zyn@Secure#99
       database: 0
-      # timeout: 3000ms
-      # lettuce:
-      #   pool:
-      #     max-active: 8
-      #     max-idle: 8
-      #     min-idle: 0
 
-    # ==================== Elasticsearch ====================
+    # ==================== Elasticsearch（由 profile 配置） ====================
     elasticsearch:
       uris: http://localhost:9200
       username: elastic
       password: Zyn@Secure#99
-      # connection-timeout: 1s
-      # socket-timeout: 30s
 
-  # ==================== Kafka ====================
+  # ==================== Kafka（由 profile 配置） ====================
   kafka:
     bootstrap-servers: localhost:9092
     listener:
