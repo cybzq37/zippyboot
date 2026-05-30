@@ -1,27 +1,36 @@
 package com.zyn.infra.discovery;
 
+import org.springframework.http.client.JdkClientHttpRequestFactory;
 import org.springframework.web.client.RestClient;
 import org.springframework.web.client.support.RestClientAdapter;
 import org.springframework.web.service.invoker.HttpServiceProxyFactory;
 
+import java.net.http.HttpClient;
+import java.time.Duration;
+
 /**
  * HttpExchange 客户端构建工具。
- * <p>
- * 用于在 @Configuration 类中快速创建 HttpExchange 客户端 Bean：
- * <pre>
- * &#64;Bean
- * public RemoteUserService remoteUserService(DiscoveryProperties props) {
- *     return ServiceProxyBuilder.build(RemoteUserService.class, props.getRequiredUrl("sys"));
- * }
- * </pre>
  */
 public final class ServiceProxyBuilder {
+
+    private static final Duration CONNECT_TIMEOUT = Duration.ofSeconds(3);
+    private static final Duration READ_TIMEOUT = Duration.ofSeconds(10);
 
     private ServiceProxyBuilder() {
     }
 
     public static <T> T build(Class<T> serviceType, String baseUrl) {
-        RestClient client = RestClient.builder().baseUrl(baseUrl).build();
+        HttpClient httpClient = HttpClient.newBuilder()
+                .connectTimeout(CONNECT_TIMEOUT)
+                .build();
+        JdkClientHttpRequestFactory requestFactory = new JdkClientHttpRequestFactory(httpClient);
+        requestFactory.setReadTimeout(READ_TIMEOUT);
+
+        RestClient client = RestClient.builder()
+                .baseUrl(baseUrl)
+                .requestFactory(requestFactory)
+                .build();
+
         HttpServiceProxyFactory factory = HttpServiceProxyFactory
                 .builderFor(RestClientAdapter.create(client))
                 .build();

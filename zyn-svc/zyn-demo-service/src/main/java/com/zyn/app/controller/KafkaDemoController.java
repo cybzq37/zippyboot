@@ -4,7 +4,9 @@ import com.zyn.infra.kafka.KafkaClient;
 import com.zyn.kit.response.ApiResponse;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.kafka.annotation.KafkaListener;
+import org.springframework.stereotype.Component;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -34,9 +36,23 @@ public class KafkaDemoController {
         return ApiResponse.ok(received);
     }
 
-    @KafkaListener(topics = "demo-topic", groupId = "demo-group")
-    public void onMessage(String message) {
-        received.add(message);
-        if (received.size() > 100) received.remove(0);
+    /**
+     * Kafka 消费者，仅在 Kafka 可用时启用。
+     */
+    @Component
+    @ConditionalOnProperty(prefix = "spring.kafka", name = "bootstrap-servers")
+    public static class DemoKafkaConsumer {
+
+        private final CopyOnWriteArrayList<String> received;
+
+        public DemoKafkaConsumer(KafkaDemoController controller) {
+            this.received = controller.received;
+        }
+
+        @KafkaListener(topics = "demo-topic", groupId = "demo-group")
+        public void onMessage(String message) {
+            received.add(message);
+            if (received.size() > 100) received.remove(0);
+        }
     }
 }
