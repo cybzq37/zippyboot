@@ -14,14 +14,18 @@ import java.util.Map;
  * @param body       响应体文本
  * @param errorMessage 错误信息（IO 异常等），成功时为 null
  */
-public record HttpResponse(int statusCode, Map<String, String> headers, String body, String errorMessage) {
+public record HttpResponse(int statusCode, Map<String, String> headers, String body, byte[] bodyBytes, String errorMessage) {
 
     public static HttpResponse success(int statusCode, Map<String, String> headers, String body) {
-        return new HttpResponse(statusCode, headers != null ? headers : Collections.emptyMap(), body, null);
+        return new HttpResponse(statusCode, headers != null ? headers : Collections.emptyMap(), body, null, null);
+    }
+
+    public static HttpResponse successBytes(int statusCode, Map<String, String> headers, byte[] bodyBytes) {
+        return new HttpResponse(statusCode, headers != null ? headers : Collections.emptyMap(), null, bodyBytes, null);
     }
 
     public static HttpResponse failure(String errorMessage) {
-        return new HttpResponse(-1, Collections.emptyMap(), null, errorMessage);
+        return new HttpResponse(-1, Collections.emptyMap(), null, null, errorMessage);
     }
 
     /**
@@ -35,7 +39,7 @@ public record HttpResponse(int statusCode, Map<String, String> headers, String b
      * 获取指定响应头（忽略大小写）。
      */
     public String header(String name) {
-        return headers.get(name);
+        return headers.get(name.toLowerCase(Locale.ROOT));
     }
 
     /**

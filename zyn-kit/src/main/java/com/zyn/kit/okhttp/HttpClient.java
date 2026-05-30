@@ -15,8 +15,14 @@ import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Consumer;
+import okio.BufferedSource;
 
 /**
  * OkHttp 客户端封装。
@@ -379,6 +385,119 @@ public class HttpClient {
             }
             log.error("http client call exception", e);
             return HttpResponse.failure(e.getMessage());
+        }
+    }
+
+    // ==================== Execute (Binary) ====================
+
+    /**
+     * 执行请求，返回二进制响应体。适用于图片、PDF 等非文本响应。
+     */
+    public HttpResponse executeBytes(Request request) {
+        try (Response response = client.newCall(request).execute()) {
+            ResponseBody body = response.body();
+            if (body == null) {
+                return HttpResponse.success(response.code(), HttpResponse.toHeaderMap(response.headers()), null);
+            }
+            byte[] bytes = body.bytes();
+            return HttpResponse.successBytes(response.code(), HttpResponse.toHeaderMap(response.headers()), bytes);
+        } catch (IOException e) {
+            if (throwOnHttpError) {
+                throw new HttpClientException("HTTP request failed due to IO exception", e);
+            }
+            log.error("http client call exception", e);
+            return HttpResponse.failure(e.getMessage());
+        }
+    }
+
+    // ==================== Streaming Download ====================
+
+    /**
+     * 流式下载，直接写入文件，不占用内存。
+     *
+     * @param request  HTTP 请求
+     * @param targetPath 目标文件路径
+     * @return 下载的字节数，失败返回 -1
+     */
+    public long download(Request request, Path targetPath) {
+        try (Response response = client.newCall(request).execute()) {
+            if (!response.isSuccessful()) {
+                log.error("download failed, status={}", response.code());
+                return -1;
+            }
+            ResponseBody body = response.body();
+            if (body == null) return 0;
+            try (InputStream in = body.byteStream();
+                 OutputStream out = Files.newOutputStream(targetPath)) {
+                byte[] buf = new byte[8192];
+                long total = 0;
+                int n;
+                while ((n = in.read(buf)) != -1) {
+                    out.write(buf, 0, n);
+                    total += n;
+                }
+                return total;
+            }
+        } catch (IOException e) {
+            log.error("download exception", e);
+            return -1;
+        }
+    }
+
+    // ==================== Streaming Upload ====================
+
+    /**
+     * 流式上传，从 InputStream 读取数据，不加载到内存。
+     *
+     * @param url         上传地址
+     * @param headers     请求头
+     * @param fileName    文件名
+     * @param inputStream 输入流
+     * @param contentType Content-Type
+     * @param contentLength 内容长度，未知传 -1
+     * @return HTTP 响应
+     */
+    public HttpResponse uploadStream(String url, Map<String, String> headers,
+                                     String fileName, InputStream inputStream,
+                                     String contentType, long contentLength) {
+        MediaType mediaType = MediaType.parse(contentType != null ? contentType : DEFAULT_BINARY_CONTENT_TYPE);
+        RequestBody body = new StreamingRequestBody(inputStream, mediaType, contentLength);
+
+        Request request = new Request.Builder()
+                .url(url)
+                .headers(buildHeaders(headers))
+                .post(body)
+                .build();
+        return execute(request);
+    }
+
+    // ==================== SSE / Streaming Response ====================
+
+    /**
+     * 流式读取响应，逐行回调。适用于 Server-Sent Events (SSE) 或长连接。
+     * <p>
+     * 回调在 OkHttp 线程执行，回调实现需线程安全。
+     *
+     * @param request  HTTP 请求
+     * @param onLine   每行回调（不含换行符）
+     */
+    public void stream(Request request, Consumer<String> onLine) {
+        try (Response response = client.newCall(request).execute()) {
+            if (!response.isSuccessful()) {
+                log.error("stream request failed, status={}", response.code());
+                return;
+            }
+            ResponseBody body = response.body();
+            if (body == null) return;
+            BufferedSource source = body.source();
+            while (!source.exhausted()) {
+                String line = source.readUtf8Line();
+                if (line != null) {
+                    onLine.accept(line);
+                }
+            }
+        } catch (IOException e) {
+            log.error("stream exception", e);
         }
     }
 
