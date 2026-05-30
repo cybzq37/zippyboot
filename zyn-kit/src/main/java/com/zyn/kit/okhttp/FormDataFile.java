@@ -5,45 +5,100 @@ import com.zyn.kit.util.StringUtils;
 import java.io.File;
 import java.nio.file.Path;
 
-public record FormDataFile(String fieldName, String contentType, String fileName, byte[] fileData, File file) {
+/**
+ * 表单文件数据，支持三种来源：字节数组、File、Path。
+ */
+public sealed interface FormDataFile {
 
-    private static final String DEFAULT_CONTENT_TYPE = "application/octet-stream";
-    private static final String DEFAULT_FIELD_NAME = "file";
+    String DEFAULT_CONTENT_TYPE = "application/octet-stream";
+    String DEFAULT_FIELD_NAME = "file";
 
-    public FormDataFile {
-        fieldName = StringUtils.isBlank(fieldName) ? DEFAULT_FIELD_NAME : fieldName;
-        contentType = StringUtils.isBlank(contentType) ? DEFAULT_CONTENT_TYPE : contentType;
-        fileName = resolveFileName(fileName, file);
+    String fieldName();
+    String contentType();
+    String fileName();
+
+    // ==================== 字节数组 ====================
+
+    record Bytes(String fieldName, String contentType, String fileName, byte[] data) implements FormDataFile {}
+
+    // ==================== File ====================
+
+    record FileRef(String fieldName, String contentType, String fileName, File file) implements FormDataFile {}
+
+    // ==================== Path ====================
+
+    record PathRef(String fieldName, String contentType, String fileName, Path path) implements FormDataFile {}
+
+    // ==================== 工厂方法 ====================
+
+    static Bytes of(String fieldName, String fileName, byte[] data) {
+        return new Bytes(
+                defaultFieldName(fieldName),
+                DEFAULT_CONTENT_TYPE,
+                defaultFileName(fileName, null),
+                data
+        );
     }
 
-    public static FormDataFile ofBytes(String fieldName, String fileName, byte[] fileData) {
-        return new FormDataFile(fieldName, DEFAULT_CONTENT_TYPE, fileName, fileData, null);
+    static Bytes of(String fieldName, String fileName, String contentType, byte[] data) {
+        return new Bytes(
+                defaultFieldName(fieldName),
+                defaultContentType(contentType),
+                defaultFileName(fileName, null),
+                data
+        );
     }
 
-    public static FormDataFile ofBytes(String fieldName, String fileName, String contentType, byte[] fileData) {
-        return new FormDataFile(fieldName, contentType, fileName, fileData, null);
+    static FileRef of(String fieldName, File file) {
+        return new FileRef(
+                defaultFieldName(fieldName),
+                DEFAULT_CONTENT_TYPE,
+                defaultFileName(null, file),
+                file
+        );
     }
 
-    public static FormDataFile ofFile(String fieldName, String fileName, File file) {
-        return new FormDataFile(fieldName, DEFAULT_CONTENT_TYPE, fileName, null, file);
+    static FileRef of(String fieldName, String contentType, File file) {
+        return new FileRef(
+                defaultFieldName(fieldName),
+                defaultContentType(contentType),
+                defaultFileName(null, file),
+                file
+        );
     }
 
-    public static FormDataFile ofFile(String fieldName, String fileName, String contentType, File file) {
-        return new FormDataFile(fieldName, contentType, fileName, null, file);
+    static PathRef of(String fieldName, Path path) {
+        return new PathRef(
+                defaultFieldName(fieldName),
+                DEFAULT_CONTENT_TYPE,
+                defaultFileName(null, path),
+                path
+        );
     }
 
-    public static FormDataFile ofPath(String fieldName, Path path) {
-        return new FormDataFile(fieldName, DEFAULT_CONTENT_TYPE, null, null, path.toFile());
+    static PathRef of(String fieldName, String contentType, Path path) {
+        return new PathRef(
+                defaultFieldName(fieldName),
+                defaultContentType(contentType),
+                defaultFileName(null, path),
+                path
+        );
     }
 
-    public static FormDataFile ofPath(String fieldName, String contentType, Path path) {
-        return new FormDataFile(fieldName, contentType, null, null, path.toFile());
+    // ==================== 内部 ====================
+
+    private static String defaultFieldName(String name) {
+        return StringUtils.isBlank(name) ? DEFAULT_FIELD_NAME : name;
     }
 
-    private static String resolveFileName(String fileName, File file) {
-        if (!StringUtils.isBlank(fileName)) {
-            return fileName;
-        }
-        return file != null ? file.getName() : DEFAULT_FIELD_NAME;
+    private static String defaultContentType(String ct) {
+        return StringUtils.isBlank(ct) ? DEFAULT_CONTENT_TYPE : ct;
+    }
+
+    private static String defaultFileName(String fileName, Object source) {
+        if (!StringUtils.isBlank(fileName)) return fileName;
+        if (source instanceof File f) return f.getName();
+        if (source instanceof Path p) return p.getFileName().toString();
+        return DEFAULT_FIELD_NAME;
     }
 }

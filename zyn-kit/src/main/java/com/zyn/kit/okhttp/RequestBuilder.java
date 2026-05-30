@@ -261,11 +261,12 @@ public class RequestBuilder {
             for (FormDataFile f : files) {
                 if (f == null) continue;
                 MediaType mt = MediaType.parse(f.contentType());
-                if (f.fileData() != null && f.fileData().length > 0) {
-                    mb.addFormDataPart(f.fieldName(), f.fileName(), RequestBody.create(f.fileData(), mt));
-                } else if (f.file() != null) {
-                    mb.addFormDataPart(f.fieldName(), f.fileName(), RequestBody.create(f.file(), mt));
-                }
+                RequestBody rb = switch (f) {
+                    case FormDataFile.Bytes b -> RequestBody.create(b.data(), mt);
+                    case FormDataFile.FileRef fr -> RequestBody.create(fr.file(), mt);
+                    case FormDataFile.PathRef pr -> RequestBody.create(pr.path().toFile(), mt);
+                };
+                mb.addFormDataPart(f.fieldName(), f.fileName(), rb);
             }
             if (formFields != null) {
                 formFields.forEach(mb::addFormDataPart);

@@ -119,7 +119,7 @@ class HttpClientTest {
     @Test
     void post_multipart() throws Exception {
         server.enqueue(new MockResponse().setBody("ok"));
-        FormDataFile file = FormDataFile.ofBytes("file", "test.txt", "text/plain", "hello".getBytes());
+        FormDataFile file = FormDataFile.of("file", "test.txt", "text/plain", "hello".getBytes());
         client.request(url("upload")).file(file).post();
 
         RecordedRequest req = server.takeRequest();
@@ -398,17 +398,18 @@ class HttpClientTest {
     @Test
     void formDataFile_ofPath() throws Exception {
         Path tmp = Files.createTempFile("test", ".txt");
-        FormDataFile f = FormDataFile.ofPath("doc", tmp);
+        FormDataFile f = FormDataFile.of("doc", tmp);
 
         assertEquals("doc", f.fieldName());
         assertTrue(f.fileName().endsWith(".txt"));
-        assertNotNull(f.file());
+        assertTrue(f instanceof FormDataFile.PathRef);
+        assertNotNull(((FormDataFile.PathRef) f).path());
         Files.delete(tmp);
     }
 
     @Test
     void formDataFile_ofBytes() {
-        FormDataFile f = FormDataFile.ofBytes("avatar", "a.png", new byte[]{1, 2, 3});
+        FormDataFile f = FormDataFile.of("avatar", "a.png", new byte[]{1, 2, 3});
 
         assertEquals("avatar", f.fieldName());
         assertEquals("a.png", f.fileName());
