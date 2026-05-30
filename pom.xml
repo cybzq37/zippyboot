@@ -13,10 +13,10 @@
 
     <modules>
         <module>zyn-kit</module>
-        <module>zyn-config</module>
+        <module>zyn-conf</module>
         <module>zyn-infra</module>
         <module>zyn-api</module>
-        <module>zyn-svc</module>
+        <module>zyn-app</module>
     </modules>
 
     <properties>
@@ -25,8 +25,9 @@
         <aws-sdk2.version>2.26.28</aws-sdk2.version>
         <mybatis-plus.version>3.5.7</mybatis-plus.version>
         <sa-token.version>1.39.0</sa-token.version>
-        <geotools.version>31.3</geotools.version>
+        <geotools.version>34.4</geotools.version>
         <springdoc.version>2.6.0</springdoc.version>
+        <jgrapht.version>1.5.3</jgrapht.version>
         <disruptor.version>3.4.4</disruptor.version>
         <dynamic-datasource.version>4.3.1</dynamic-datasource.version>
         <okhttp.version>4.12.0</okhttp.version>
@@ -36,6 +37,8 @@
         <maven-compiler-plugin.version>3.13.0</maven-compiler-plugin.version>
         <maven-surefire-plugin.version>3.5.0</maven-surefire-plugin.version>
         <maven.compiler.release>${java.version}</maven.compiler.release>
+        <maven.compiler.source>${java.version}</maven.compiler.source>
+        <maven.compiler.target>${java.version}</maven.compiler.target>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     </properties>
 
@@ -67,7 +70,7 @@
             </dependency>
             <dependency>
                 <groupId>com.zyn</groupId>
-                <artifactId>zyn-config</artifactId>
+                <artifactId>zyn-conf</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
@@ -127,12 +130,12 @@
             </dependency>
             <dependency>
                 <groupId>com.zyn</groupId>
-                <artifactId>zyn-sys-api</artifactId>
+                <artifactId>zyn-api-system</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
                 <groupId>com.zyn</groupId>
-                <artifactId>zyn-sys-service</artifactId>
+                <artifactId>zyn-app-system</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
@@ -171,9 +174,24 @@
                 <version>${geotools.version}</version>
             </dependency>
             <dependency>
+                <groupId>org.geotools</groupId>
+                <artifactId>gt-imageio-ext-gdal</artifactId>
+                <version>${geotools.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.geotools</groupId>
+                <artifactId>gt-geopkg</artifactId>
+                <version>${geotools.version}</version>
+            </dependency>
+            <dependency>
                 <groupId>org.springdoc</groupId>
                 <artifactId>springdoc-openapi-starter-webmvc-ui</artifactId>
                 <version>${springdoc.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.jgrapht</groupId>
+                <artifactId>jgrapht-core</artifactId>
+                <version>${jgrapht.version}</version>
             </dependency>
             <dependency>
                 <groupId>com.lmax</groupId>

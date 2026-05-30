@@ -9,7 +9,7 @@ import org.springframework.web.service.annotation.HttpExchange;
 /**
  * 服务发现自动配置。
  * 引入 zyn-infra-discovery 依赖后自动生效。
- * 服务地址配置由 zyn-config 模块提供。
+ * 服务地址配置由 zyn-conf 模块提供。
  */
 @AutoConfiguration
 @ConditionalOnClass(HttpExchange.class)

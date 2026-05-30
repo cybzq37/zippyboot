@@ -10,7 +10,7 @@
         <relativePath>../../pom.xml</relativePath>
     </parent>
 
-    <artifactId>zyn-sys-api</artifactId>
+    <artifactId>zyn-api-system</artifactId>
     <packaging>jar</packaging>
 
     <dependencies>

@@ -16,6 +16,6 @@
     <description>API contracts aggregation POM</description>
 
     <modules>
-        <module>zyn-sys-api</module>
+        <module>zyn-api-system</module>
     </modules>
 </project>

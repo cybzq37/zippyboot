@@ -8,5 +8,5 @@ spring:
     active: @spring.profiles.active@
   config:
     import:
-      - classpath:zyn-config-common.yml
-      - classpath:zyn-config-@spring.profiles.active@.yml
+      - classpath:zyn-conf-common.yml
+      - classpath:zyn-conf-@spring.profiles.active@.yml

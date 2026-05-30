@@ -11,8 +11,8 @@
         <relativePath>../../pom.xml</relativePath>
     </parent>
 
-    <artifactId>zyn-netty-service</artifactId>
-    <name>zyn-netty-service</name>
+    <artifactId>zyn-app-demo</artifactId>
+    <name>zyn-app-demo</name>
 
     <dependencies>
         <dependency>
@@ -21,7 +21,43 @@
         </dependency>
         <dependency>
             <groupId>com.zyn</groupId>
-            <artifactId>zyn-config</artifactId>
+            <artifactId>zyn-conf</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.zyn</groupId>
+            <artifactId>zyn-infra-discovery</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.zyn</groupId>
+            <artifactId>zyn-infra-redis</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.zyn</groupId>
+            <artifactId>zyn-infra-mybatis</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.zyn</groupId>
+            <artifactId>zyn-infra-kafka</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.zyn</groupId>
+            <artifactId>zyn-infra-es</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.zyn</groupId>
+            <artifactId>zyn-infra-storage</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.zyn</groupId>
+            <artifactId>zyn-infra-web</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.zyn</groupId>
+            <artifactId>zyn-infra-satoken</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.zyn</groupId>
+            <artifactId>zyn-api-system</artifactId>
         </dependency>
         <dependency>
             <groupId>org.springframework.boot</groupId>
@@ -44,6 +80,16 @@
             </exclusions>
         </dependency>
         <dependency>
+            <groupId>cn.dev33</groupId>
+            <artifactId>sa-token-spring-boot3-starter</artifactId>
+            <exclusions>
+                <exclusion>
+                    <groupId>org.springframework.boot</groupId>
+                    <artifactId>spring-boot-starter-logging</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+        <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-log4j2</artifactId>
         </dependency>
@@ -52,8 +98,8 @@
             <artifactId>disruptor</artifactId>
         </dependency>
         <dependency>
-            <groupId>io.netty</groupId>
-            <artifactId>netty-all</artifactId>
+            <groupId>org.springdoc</groupId>
+            <artifactId>springdoc-openapi-starter-webmvc-ui</artifactId>
         </dependency>
         <dependency>
             <groupId>org.projectlombok</groupId>
@@ -69,6 +115,17 @@
                 <exclusion>
                     <groupId>org.springframework.boot</groupId>
                     <artifactId>spring-boot-starter-logging</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.kafka</groupId>
+            <artifactId>spring-kafka-test</artifactId>
+            <scope>test</scope>
+            <exclusions>
+                <exclusion>
+                    <groupId>ch.qos.logback</groupId>
+                    <artifactId>logback-classic</artifactId>
                 </exclusion>
             </exclusions>
         </dependency>

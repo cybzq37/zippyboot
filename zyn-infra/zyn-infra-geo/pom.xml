@@ -49,6 +49,18 @@
             <artifactId>gt-epsg-hsql</artifactId>
         </dependency>
 
+        <!-- GDAL ImageIO (pure Java) -->
+        <dependency>
+            <groupId>org.geotools</groupId>
+            <artifactId>gt-imageio-ext-gdal</artifactId>
+        </dependency>
+
+        <!-- GeoPackage -->
+        <dependency>
+            <groupId>org.geotools</groupId>
+            <artifactId>gt-geopkg</artifactId>
+        </dependency>
+
         <!-- Pinyin -->
         <dependency>
             <groupId>com.github.promeg</groupId>
