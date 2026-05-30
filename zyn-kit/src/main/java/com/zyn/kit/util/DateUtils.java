@@ -40,7 +40,7 @@ public class DateUtils {
 
     public static final String YYYY_MM_DD_HH_MM_SS_SSS = "yyyy-MM-dd HH:mm:ss.SSS";
 
-    private static final ZoneId SYSTEM_ZONE = ZoneId.systemDefault();
+    private static final ZoneId SYSTEM_ZONE = ZoneId.of("Asia/Shanghai");
 
     private static final Map<String, DateTimeFormatter> FORMATTER_CACHE = new ConcurrentHashMap<>();
 

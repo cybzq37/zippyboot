@@ -1,5 +1,6 @@
 package com.zyn.kit.jackson.config;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.databind.MapperFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
@@ -37,6 +38,7 @@ public class JacksonConfig {
             builder.modules(javaTimeModule(), new IEnumModule(), dateModule());
             builder.featuresToDisable(MapperFeature.DEFAULT_VIEW_INCLUSION);
             builder.featuresToDisable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
+            builder.serializationInclusion(JsonInclude.Include.NON_NULL);
             builder.simpleDateFormat("yyyy-MM-dd HH:mm:ss");
         };
     }
@@ -50,6 +52,7 @@ public class JacksonConfig {
         mapper.registerModule(dateModule());
         mapper.configure(MapperFeature.DEFAULT_VIEW_INCLUSION, false);
         mapper.configure(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS, false);
+        mapper.setSerializationInclusion(JsonInclude.Include.NON_NULL);
         mapper.setDateFormat(new SimpleDateFormat("yyyy-MM-dd HH:mm:ss"));
         return mapper;
     }

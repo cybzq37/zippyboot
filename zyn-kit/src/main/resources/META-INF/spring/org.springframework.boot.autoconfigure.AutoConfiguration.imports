@@ -1,3 +1,4 @@
 com.zyn.kit.jackson.config.JacksonConfig
 com.zyn.kit.jackson.config.ValidatorConfig
 com.zyn.kit.okhttp.HttpClientAutoConfiguration
+com.zyn.kit.threadpool.ThreadPoolConfig
