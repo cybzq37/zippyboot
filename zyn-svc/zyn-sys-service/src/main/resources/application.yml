@@ -4,30 +4,18 @@ server:
 spring:
   application:
     name: zyn-sys
-  jackson:
-    time-zone: Asia/Shanghai
-  datasource:
-    dynamic:
-      primary: master
-      datasource:
-        master:
-          url: jdbc:h2:mem:zyn_base;DB_CLOSE_DELAY=-1;MODE=PostgreSQL
-          username: sa
-          password:
-          driver-class-name: org.h2.Driver
-  h2:
-    console:
-      enabled: true
-      path: /h2-console
+  profiles:
+    active: @spring.profiles.active@
+  config:
+    import:
+      - classpath:zyn-config-common.yml
+      - classpath:zyn-config-@spring.profiles.active@.yml
   sql:
     init:
       mode: always
       schema-locations: classpath:schema.sql
 
 mybatis-plus:
-  configuration:
-    map-underscore-to-camel-case: true
-    log-impl: org.apache.ibatis.logging.slf4j.Slf4jImpl
   global-config:
     db-config:
       logic-delete-field: deleted
@@ -36,15 +24,4 @@ mybatis-plus:
 
 zyn:
   satoken:
-    enabled: true
-    login-type: login
-    token-prefix: Bearer
     root-user-id: 0
-  mybatis:
-    enabled: true
-  global:
-    web:
-      exception:
-        enabled: true
-      response:
-        enabled: true

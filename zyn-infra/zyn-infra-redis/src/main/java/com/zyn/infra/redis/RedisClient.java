@@ -1,6 +1,6 @@
 package com.zyn.infra.redis;
 
-import lombok.RequiredArgsConstructor;
+import lombok.Getter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.Cursor;
 import org.springframework.data.redis.core.RedisCallback;
@@ -20,7 +20,6 @@ import java.util.Set;
 import java.util.UUID;
 
 @Component
-@RequiredArgsConstructor
 public class RedisClient {
 
     private static final DefaultRedisScript<Long> UNLOCK_SCRIPT = new DefaultRedisScript<>(
@@ -33,7 +32,12 @@ public class RedisClient {
             Long.class
     );
 
-    private final StringRedisTemplate redisTemplate;
+    private StringRedisTemplate redisTemplate;
+
+    @Autowired(required = false)
+    public void setRedisTemplate(StringRedisTemplate redisTemplate) {
+        this.redisTemplate = redisTemplate;
+    }
 
     private org.springframework.data.redis.core.RedisTemplate<String, Object> objectRedisTemplate;
 
@@ -42,36 +46,43 @@ public class RedisClient {
         this.objectRedisTemplate = objectRedisTemplate;
     }
 
+    private StringRedisTemplate template() {
+        if (redisTemplate == null) {
+            throw new IllegalStateException("Redis not configured, StringRedisTemplate not available");
+        }
+        return redisTemplate;
+    }
+
     public void put(String key, String value) {
-        redisTemplate.opsForValue().set(key, value);
+        template().opsForValue().set(key, value);
     }
 
     public void put(String key, String value, Duration ttl) {
-        redisTemplate.opsForValue().set(key, value, ttl);
+        template().opsForValue().set(key, value, ttl);
     }
 
     public void putAll(Map<String, String> values) {
-        redisTemplate.opsForValue().multiSet(values);
+        template().opsForValue().multiSet(values);
     }
 
     public Boolean putIfAbsent(String key, String value) {
-        return redisTemplate.opsForValue().setIfAbsent(key, value);
+        return template().opsForValue().setIfAbsent(key, value);
     }
 
     public Boolean putIfAbsent(String key, String value, Duration ttl) {
-        return redisTemplate.opsForValue().setIfAbsent(key, value, ttl);
+        return template().opsForValue().setIfAbsent(key, value, ttl);
     }
 
     public Optional<String> get(String key) {
-        return Optional.ofNullable(redisTemplate.opsForValue().get(key));
+        return Optional.ofNullable(template().opsForValue().get(key));
     }
 
     public Optional<String> getAndDelete(String key) {
-        return Optional.ofNullable(redisTemplate.opsForValue().getAndDelete(key));
+        return Optional.ofNullable(template().opsForValue().getAndDelete(key));
     }
 
     public List<String> multiGet(Collection<String> keys) {
-        return redisTemplate.opsForValue().multiGet(keys);
+        return template().opsForValue().multiGet(keys);
     }
 
     public Optional<String> tryLock(String key, Duration ttl) {
@@ -85,16 +96,16 @@ public class RedisClient {
     }
 
     public Boolean unlock(String key, String token) {
-        Long deleted = redisTemplate.execute(UNLOCK_SCRIPT, List.of(key), token);
+        Long deleted = template().execute(UNLOCK_SCRIPT, List.of(key), token);
         return deleted != null && deleted > 0;
     }
 
     public List<Object> executePipelined(SessionCallback<?> sessionCallback) {
-        return redisTemplate.executePipelined(sessionCallback);
+        return template().executePipelined(sessionCallback);
     }
 
     public List<Object> executePipelined(RedisCallback<?> redisCallback) {
-        return redisTemplate.executePipelined(redisCallback);
+        return template().executePipelined(redisCallback);
     }
 
     public Set<String> scan(String pattern) {
@@ -107,7 +118,7 @@ public class RedisClient {
 
     public Set<String> scan(ScanOptions scanOptions) {
         Set<String> keys = new LinkedHashSet<>();
-        try (Cursor<String> cursor = redisTemplate.scan(scanOptions)) {
+        try (Cursor<String> cursor = template().scan(scanOptions)) {
             while (cursor.hasNext()) {
                 keys.add(cursor.next());
             }
@@ -118,37 +129,37 @@ public class RedisClient {
     }
 
     public Boolean exists(String key) {
-        return redisTemplate.hasKey(key);
+        return template().hasKey(key);
     }
 
     public Boolean expire(String key, Duration ttl) {
-        return redisTemplate.expire(key, ttl);
+        return template().expire(key, ttl);
     }
 
     public Optional<Duration> ttl(String key) {
-        return Optional.ofNullable(redisTemplate.getExpire(key))
+        return Optional.ofNullable(template().getExpire(key))
                 .filter(seconds -> seconds >= 0)
                 .map(Duration::ofSeconds);
     }
 
     public Long increment(String key) {
-        return redisTemplate.opsForValue().increment(key);
+        return template().opsForValue().increment(key);
     }
 
     public Long increment(String key, long delta) {
-        return redisTemplate.opsForValue().increment(key, delta);
+        return template().opsForValue().increment(key, delta);
     }
 
     public Double increment(String key, double delta) {
-        return redisTemplate.opsForValue().increment(key, delta);
+        return template().opsForValue().increment(key, delta);
     }
 
     public Long decrement(String key) {
-        return redisTemplate.opsForValue().decrement(key);
+        return template().opsForValue().decrement(key);
     }
 
     public Long decrement(String key, long delta) {
-        return redisTemplate.opsForValue().decrement(key, delta);
+        return template().opsForValue().decrement(key, delta);
     }
 
     private org.springframework.data.redis.core.RedisTemplate<String, Object> requireObjectTemplate() {
@@ -185,90 +196,90 @@ public class RedisClient {
     }
 
     public void hashPut(String key, String hashKey, String value) {
-        redisTemplate.opsForHash().put(key, hashKey, value);
+        template().opsForHash().put(key, hashKey, value);
     }
 
     public void hashPutAll(String key, Map<String, String> values) {
-        redisTemplate.opsForHash().putAll(key, values);
+        template().opsForHash().putAll(key, values);
     }
 
     public Optional<Object> hashGet(String key, String hashKey) {
-        return Optional.ofNullable(redisTemplate.opsForHash().get(key, hashKey));
+        return Optional.ofNullable(template().opsForHash().get(key, hashKey));
     }
 
     public Map<Object, Object> hashEntries(String key) {
-        return redisTemplate.opsForHash().entries(key);
+        return template().opsForHash().entries(key);
     }
 
     public Boolean hashHasKey(String key, String hashKey) {
-        return redisTemplate.opsForHash().hasKey(key, hashKey);
+        return template().opsForHash().hasKey(key, hashKey);
     }
 
     public Long hashDelete(String key, String... hashKeys) {
-        return redisTemplate.opsForHash().delete(key, (Object[]) hashKeys);
+        return template().opsForHash().delete(key, (Object[]) hashKeys);
     }
 
     public Long leftPush(String key, String value) {
-        return redisTemplate.opsForList().leftPush(key, value);
+        return template().opsForList().leftPush(key, value);
     }
 
     public Long rightPush(String key, String value) {
-        return redisTemplate.opsForList().rightPush(key, value);
+        return template().opsForList().rightPush(key, value);
     }
 
     public List<String> listRange(String key, long start, long end) {
-        return redisTemplate.opsForList().range(key, start, end);
+        return template().opsForList().range(key, start, end);
     }
 
     public Optional<String> leftPop(String key) {
-        return Optional.ofNullable(redisTemplate.opsForList().leftPop(key));
+        return Optional.ofNullable(template().opsForList().leftPop(key));
     }
 
     public Optional<String> rightPop(String key) {
-        return Optional.ofNullable(redisTemplate.opsForList().rightPop(key));
+        return Optional.ofNullable(template().opsForList().rightPop(key));
     }
 
     public Long addToSet(String key, String... values) {
-        return redisTemplate.opsForSet().add(key, values);
+        return template().opsForSet().add(key, values);
     }
 
     public Set<String> members(String key) {
-        return redisTemplate.opsForSet().members(key);
+        return template().opsForSet().members(key);
     }
 
     public Boolean isMember(String key, String value) {
-        return redisTemplate.opsForSet().isMember(key, value);
+        return template().opsForSet().isMember(key, value);
     }
 
     public Long removeFromSet(String key, String... values) {
-        return redisTemplate.opsForSet().remove(key, (Object[]) values);
+        return template().opsForSet().remove(key, (Object[]) values);
     }
 
     public Boolean addToZSet(String key, String value, double score) {
-        return redisTemplate.opsForZSet().add(key, value, score);
+        return template().opsForZSet().add(key, value, score);
     }
 
     public Set<String> zSetRange(String key, long start, long end) {
-        return redisTemplate.opsForZSet().range(key, start, end);
+        return template().opsForZSet().range(key, start, end);
     }
 
     public Set<String> zSetRangeByScore(String key, double min, double max) {
-        return redisTemplate.opsForZSet().rangeByScore(key, min, max);
+        return template().opsForZSet().rangeByScore(key, min, max);
     }
 
     public Optional<Double> zSetScore(String key, String value) {
-        return Optional.ofNullable(redisTemplate.opsForZSet().score(key, value));
+        return Optional.ofNullable(template().opsForZSet().score(key, value));
     }
 
     public Long removeFromZSet(String key, String... values) {
-        return redisTemplate.opsForZSet().remove(key, (Object[]) values);
+        return template().opsForZSet().remove(key, (Object[]) values);
     }
 
     public Boolean delete(String key) {
-        return redisTemplate.delete(key);
+        return template().delete(key);
     }
 
     public Long delete(Collection<String> keys) {
-        return redisTemplate.delete(keys);
+        return template().delete(keys);
     }
 }

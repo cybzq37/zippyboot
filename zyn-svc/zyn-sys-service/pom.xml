@@ -24,6 +24,10 @@
         </dependency>
         <dependency>
             <groupId>com.zyn</groupId>
+            <artifactId>zyn-config</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.zyn</groupId>
             <artifactId>zyn-infra-mybatis</artifactId>
         </dependency>
         <dependency>
@@ -65,8 +69,8 @@
             <artifactId>spring-security-crypto</artifactId>
         </dependency>
         <dependency>
-            <groupId>com.h2database</groupId>
-            <artifactId>h2</artifactId>
+            <groupId>org.postgresql</groupId>
+            <artifactId>postgresql</artifactId>
             <scope>runtime</scope>
         </dependency>
         <dependency>
@@ -90,6 +94,12 @@
     </dependencies>
 
     <build>
+        <resources>
+            <resource>
+                <directory>src/main/resources</directory>
+                <filtering>true</filtering>
+            </resource>
+        </resources>
         <plugins>
             <plugin>
                 <groupId>org.springframework.boot</groupId>

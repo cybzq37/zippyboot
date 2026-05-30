@@ -32,16 +32,3 @@ effective-settings*
 
 # Spring Boot
 spring-shell.log
-
-# Docker
-docker/postgres/
-docker/redis/
-docker/kafka/
-docker/elasticsearch/data/
-docker/elasticsearch/logs/
-docker/seaweedfs/master/
-docker/seaweedfs/volume/
-docker/seaweedfs/s3.conf
-docker/infini-console/data/
-docker/infini-console/logs/
-docker/.env

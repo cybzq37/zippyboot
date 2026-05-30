@@ -1,7 +1,7 @@
 package com.zyn.infra.kafka;
 
 import lombok.Getter;
-import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.kafka.core.KafkaOperations;
 import org.springframework.stereotype.Component;
 
@@ -11,9 +11,19 @@ import org.springframework.stereotype.Component;
  * 持有 {@link KafkaOperations} 引用，通过 {@link #getOperations()} 获取底层操作对象。
  */
 @Component
-@Getter
-@RequiredArgsConstructor
 public class KafkaClient {
 
-    private final KafkaOperations<Object, Object> operations;
+    private KafkaOperations<Object, Object> operations;
+
+    @Autowired(required = false)
+    public void setOperations(KafkaOperations<Object, Object> operations) {
+        this.operations = operations;
+    }
+
+    public KafkaOperations<Object, Object> getOperations() {
+        if (operations == null) {
+            throw new IllegalStateException("Kafka not configured, KafkaOperations not available");
+        }
+        return operations;
+    }
 }

@@ -13,6 +13,7 @@
 
     <modules>
         <module>zyn-kit</module>
+        <module>zyn-config</module>
         <module>zyn-infra</module>
         <module>zyn-api</module>
         <module>zyn-svc</module>
@@ -63,6 +64,11 @@
                 <groupId>com.baomidou</groupId>
                 <artifactId>dynamic-datasource-spring-boot3-starter</artifactId>
                 <version>${dynamic-datasource.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.zyn</groupId>
+                <artifactId>zyn-config</artifactId>
+                <version>${project.version}</version>
             </dependency>
             <dependency>
                 <groupId>com.zyn</groupId>

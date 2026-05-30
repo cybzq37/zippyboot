@@ -4,8 +4,12 @@ server:
 spring:
   application:
     name: zyn-netty
-  jackson:
-    time-zone: Asia/Shanghai
+  profiles:
+    active: @spring.profiles.active@
+  config:
+    import:
+      - classpath:zyn-config-common.yml
+      - classpath:zyn-config-@spring.profiles.active@.yml
 
 zyn:
   netty:

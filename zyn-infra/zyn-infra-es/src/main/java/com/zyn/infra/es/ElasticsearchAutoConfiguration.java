@@ -2,6 +2,7 @@ package com.zyn.infra.es;
 
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.autoconfigure.data.elasticsearch.ElasticsearchDataAutoConfiguration;
 import org.springframework.context.annotation.Bean;
@@ -13,6 +14,7 @@ public class ElasticsearchAutoConfiguration {
 
     @Bean
     @ConditionalOnMissingBean
+    @ConditionalOnBean(ElasticsearchOperations.class)
     public EsClient esClient(ElasticsearchOperations operations) {
         return new EsClient(operations);
     }

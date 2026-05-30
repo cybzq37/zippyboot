@@ -1,26 +1,2 @@
-# ──────────────────────────────────────────────────────────────
-# 开发环境 - 本地调试
-# ──────────────────────────────────────────────────────────────
-
-spring:
-  datasource:
-    dynamic:
-      datasource:
-        master:
-          url: jdbc:postgresql://localhost:5432/zyn_base
-  data:
-    redis:
-      host: localhost
-    elasticsearch:
-      uris: http://localhost:9200
-  kafka:
-    bootstrap-servers: localhost:9092
-
-zyn:
-  discovery:
-    services:
-      sys: http://localhost:28081
-      netty: http://localhost:28082
-  storage:
-    s3:
-      endpoint: http://localhost:8333
+# 应用自定义开发环境配置
+# 通用配置已由 zyn-config 提供，这里只放本应用特有的配置

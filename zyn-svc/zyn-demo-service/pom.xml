@@ -21,6 +21,10 @@
         </dependency>
         <dependency>
             <groupId>com.zyn</groupId>
+            <artifactId>zyn-config</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.zyn</groupId>
             <artifactId>zyn-infra-discovery</artifactId>
         </dependency>
         <dependency>
@@ -92,11 +96,6 @@
         <dependency>
             <groupId>com.lmax</groupId>
             <artifactId>disruptor</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>com.h2database</groupId>
-            <artifactId>h2</artifactId>
-            <scope>runtime</scope>
         </dependency>
         <dependency>
             <groupId>org.springdoc</groupId>
