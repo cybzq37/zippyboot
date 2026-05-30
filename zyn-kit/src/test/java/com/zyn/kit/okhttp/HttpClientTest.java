@@ -457,4 +457,218 @@ class HttpClientTest {
         assertEquals("connection refused", resp.errorMessage());
         assertFalse(resp.isSuccessful());
     }
+
+    // ==================== RequestBuilder ====================
+
+    @Test
+    void requestBuilder_getWithParams() throws Exception {
+        server.enqueue(new MockResponse().setBody("ok"));
+
+        HttpResponse resp = client.request(baseUrl() + "users")
+                .header("X-Token", "tok")
+                .param("page", "1")
+                .param("size", "10")
+                .get();
+
+        assertTrue(resp.isSuccessful());
+        RecordedRequest req = server.takeRequest();
+        assertEquals("tok", req.getHeader("X-Token"));
+        assertTrue(req.getPath().contains("page=1"));
+        assertTrue(req.getPath().contains("size=10"));
+    }
+
+    @Test
+    void requestBuilder_postJson() throws Exception {
+        server.enqueue(new MockResponse().setBody("{\"id\":1}"));
+
+        HttpResponse resp = client.request(baseUrl() + "users")
+                .header("Content-Type", "application/json")
+                .json("{\"name\":\"test\"}")
+                .post();
+
+        assertTrue(resp.isSuccessful());
+        RecordedRequest req = server.takeRequest();
+        assertEquals("POST", req.getMethod());
+        assertEquals("{\"name\":\"test\"}", req.getBody().readUtf8());
+    }
+
+    @Test
+    void requestBuilder_putJson() throws Exception {
+        server.enqueue(new MockResponse().setBody("ok"));
+
+        HttpResponse resp = client.request(baseUrl() + "users/1")
+                .json("{\"name\":\"updated\"}")
+                .put();
+
+        assertTrue(resp.isSuccessful());
+        RecordedRequest req = server.takeRequest();
+        assertEquals("PUT", req.getMethod());
+    }
+
+    @Test
+    void requestBuilder_patchJson() throws Exception {
+        server.enqueue(new MockResponse().setBody("ok"));
+
+        HttpResponse resp = client.request(baseUrl() + "users/1")
+                .json("{\"name\":\"patched\"}")
+                .patch();
+
+        assertTrue(resp.isSuccessful());
+        RecordedRequest req = server.takeRequest();
+        assertEquals("PATCH", req.getMethod());
+    }
+
+    @Test
+    void requestBuilder_deleteWithParams() throws Exception {
+        server.enqueue(new MockResponse().setBody("ok"));
+
+        HttpResponse resp = client.request(baseUrl() + "users")
+                .param("id", "42")
+                .delete();
+
+        assertTrue(resp.isSuccessful());
+        RecordedRequest req = server.takeRequest();
+        assertEquals("DELETE", req.getMethod());
+        assertTrue(req.getPath().contains("id=42"));
+    }
+
+    @Test
+    void requestBuilder_head() throws Exception {
+        server.enqueue(new MockResponse().setResponseCode(200));
+
+        HttpResponse resp = client.request(baseUrl() + "resource").head();
+
+        assertTrue(resp.isSuccessful());
+        RecordedRequest req = server.takeRequest();
+        assertEquals("HEAD", req.getMethod());
+    }
+
+    @Test
+    void requestBuilder_postForm() throws Exception {
+        server.enqueue(new MockResponse().setBody("ok"));
+
+        HttpResponse resp = client.request(baseUrl() + "login")
+                .form(Map.of("user", "admin", "pass", "123"))
+                .post();
+
+        assertTrue(resp.isSuccessful());
+        RecordedRequest req = server.takeRequest();
+        String body = req.getBody().readUtf8();
+        assertTrue(body.contains("user=admin"));
+    }
+
+    @Test
+    void requestBuilder_postText() throws Exception {
+        server.enqueue(new MockResponse().setBody("ok"));
+
+        HttpResponse resp = client.request(baseUrl() + "text")
+                .text("hello world")
+                .post();
+
+        assertTrue(resp.isSuccessful());
+        RecordedRequest req = server.takeRequest();
+        assertEquals("hello world", req.getBody().readUtf8());
+    }
+
+    @Test
+    void requestBuilder_postXml() throws Exception {
+        server.enqueue(new MockResponse().setBody("ok"));
+
+        HttpResponse resp = client.request(baseUrl() + "xml")
+                .xml("<root>test</root>")
+                .post();
+
+        assertTrue(resp.isSuccessful());
+        RecordedRequest req = server.takeRequest();
+        assertTrue(req.getHeader("Content-Type").contains("xml"));
+    }
+
+    @Test
+    void requestBuilder_postBinary() throws Exception {
+        server.enqueue(new MockResponse().setBody("ok"));
+
+        HttpResponse resp = client.request(baseUrl() + "binary")
+                .binary(new byte[]{1, 2, 3})
+                .post();
+
+        assertTrue(resp.isSuccessful());
+    }
+
+    @Test
+    void requestBuilder_download() throws Exception {
+        byte[] content = "file-data".getBytes(StandardCharsets.UTF_8);
+        server.enqueue(new MockResponse()
+                .setBody(new okio.Buffer().write(content))
+                .setHeader("Content-Length", content.length));
+
+        Path target = Files.createTempFile("req-builder-download", ".txt");
+        long bytes = client.request(baseUrl() + "download").download(target);
+
+        assertEquals(content.length, bytes);
+        assertArrayEquals(content, Files.readAllBytes(target));
+        Files.delete(target);
+    }
+
+    @Test
+    void requestBuilder_stream() {
+        server.enqueue(new MockResponse()
+                .setBody("data: hello\n\ndata: world\n\n")
+                .setHeader("Content-Type", "text/event-stream"));
+
+        CopyOnWriteArrayList<String> lines = new CopyOnWriteArrayList<>();
+        client.request(baseUrl() + "events").stream(lines::add);
+
+        assertTrue(lines.stream().anyMatch(l -> l.contains("hello")));
+        assertTrue(lines.stream().anyMatch(l -> l.contains("world")));
+    }
+
+    // ==================== Retry ====================
+
+    @Test
+    void retry_on503_thenSuccess() throws Exception {
+        OkHttpClient retryClient = new OkHttpClient.Builder()
+                .addInterceptor(new RetryInterceptor(3, 100, java.util.Set.of(503)))
+                .build();
+        HttpClient rc = new HttpClient(retryClient, false);
+
+        server.enqueue(new MockResponse().setResponseCode(503));
+        server.enqueue(new MockResponse().setResponseCode(503));
+        server.enqueue(new MockResponse().setBody("ok"));
+
+        HttpResponse resp = rc.get(baseUrl() + "flaky");
+
+        assertTrue(resp.isSuccessful());
+        assertEquals(3, server.getRequestCount());
+    }
+
+    @Test
+    void retry_exhausted_returnsLastResponse() throws Exception {
+        OkHttpClient retryClient = new OkHttpClient.Builder()
+                .addInterceptor(new RetryInterceptor(2, 50, java.util.Set.of(503)))
+                .build();
+        HttpClient rc = new HttpClient(retryClient, false);
+
+        server.enqueue(new MockResponse().setResponseCode(503));
+        server.enqueue(new MockResponse().setResponseCode(503));
+
+        HttpResponse resp = rc.get(baseUrl() + "always-fail");
+
+        assertFalse(resp.isSuccessful());
+        assertEquals(503, resp.statusCode());
+    }
+
+    @Test
+    void retry_disabled_noRetry() throws Exception {
+        OkHttpClient noRetryClient = new OkHttpClient.Builder()
+                .addInterceptor(new RetryInterceptor(1, 0, java.util.Set.of(503)))
+                .build();
+        HttpClient rc = new HttpClient(noRetryClient, false);
+
+        server.enqueue(new MockResponse().setResponseCode(503));
+
+        HttpResponse resp = rc.get(baseUrl() + "no-retry");
+
+        assertFalse(resp.isSuccessful());
+        assertEquals(1, server.getRequestCount());
+    }
 }

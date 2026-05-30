@@ -21,6 +21,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 import okio.BufferedSource;
 
@@ -93,6 +94,24 @@ public class HttpClient {
         }
         this.client = client;
         this.throwOnHttpError = throwOnHttpError;
+    }
+
+    // ==================== Request Builder ====================
+
+    /**
+     * 创建请求构建器，链式 API。
+     *
+     * <pre>
+     * client.request("https://api.example.com/users")
+     *     .header("Authorization", "Bearer token")
+     *     .param("page", "1")
+     *     .json("{\"name\":\"test\"}")
+     *     .post()
+     *     .execute();
+     * </pre>
+     */
+    public RequestBuilder request(String url) {
+        return new RequestBuilder(this, url);
     }
 
     // ==================== GET ====================
@@ -365,20 +384,7 @@ public class HttpClient {
 
     public HttpResponse execute(Request request) {
         try (Response response = client.newCall(request).execute()) {
-            ResponseBody body = response.body();
-            if (body == null) {
-                return HttpResponse.success(response.code(), HttpResponse.toHeaderMap(response.headers()), null);
-            }
-            String text = body.string();
-            HttpResponse result = HttpResponse.success(
-                    response.code(),
-                    HttpResponse.toHeaderMap(response.headers()),
-                    text
-            );
-            if (throwOnHttpError && !result.isSuccessful()) {
-                throw new HttpClientException("HTTP request failed, status=" + result.statusCode() + ", body=" + result.body());
-            }
-            return result;
+            return toResponse(response);
         } catch (IOException e) {
             if (throwOnHttpError) {
                 throw new HttpClientException("HTTP request failed due to IO exception", e);
@@ -386,6 +392,41 @@ public class HttpClient {
             log.error("http client call exception", e);
             return HttpResponse.failure(e.getMessage());
         }
+    }
+
+    /**
+     * 执行请求，使用指定超时（覆盖全局默认）。
+     */
+    HttpResponse executeWithTimeout(Request request, long timeoutMs) {
+        OkHttpClient timeoutClient = client.newBuilder()
+                .callTimeout(timeoutMs, TimeUnit.MILLISECONDS)
+                .build();
+        try (Response response = timeoutClient.newCall(request).execute()) {
+            return toResponse(response);
+        } catch (IOException e) {
+            if (throwOnHttpError) {
+                throw new HttpClientException("HTTP request failed due to IO exception", e);
+            }
+            log.error("http client call exception", e);
+            return HttpResponse.failure(e.getMessage());
+        }
+    }
+
+    private HttpResponse toResponse(Response response) throws IOException {
+        ResponseBody body = response.body();
+        if (body == null) {
+            return HttpResponse.success(response.code(), HttpResponse.toHeaderMap(response.headers()), null);
+        }
+        String text = body.string();
+        HttpResponse result = HttpResponse.success(
+                response.code(),
+                HttpResponse.toHeaderMap(response.headers()),
+                text
+        );
+        if (throwOnHttpError && !result.isSuccessful()) {
+            throw new HttpClientException("HTTP request failed, status=" + result.statusCode() + ", body=" + result.body());
+        }
+        return result;
     }
 
     // ==================== Execute (Binary) ====================

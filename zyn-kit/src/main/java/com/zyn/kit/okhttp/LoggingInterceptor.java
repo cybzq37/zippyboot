@@ -17,7 +17,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.concurrent.TimeUnit;
 
 /**
- * OkHttp 请求/响应日志拦截器。
+ * OkHttp 请求/响应日志拦截器（结构化日志）。
  * <p>
  * 仅在 DEBUG 级别启用时生效，自动截断过大的请求/响应体。
  */
@@ -46,12 +46,10 @@ public class LoggingInterceptor implements Interceptor {
         }
 
         String requestBodySummary = summarizeRequestBody(request);
-        log.debug("[HTTP-REQ] {} {}{}headers={}{}body={}",
+        log.debug("http_request method={} url={} body_size={} body={}",
                 request.method(),
                 request.url(),
-                System.lineSeparator(),
-                request.headers(),
-                System.lineSeparator(),
+                requestBodySummary.length(),
                 requestBodySummary);
 
         long startNs = System.nanoTime();
@@ -60,24 +58,19 @@ public class LoggingInterceptor implements Interceptor {
 
         ResponseBody responseBody = response.body();
         if (responseBody == null) {
-            log.debug("[HTTP-RESP] code={} url={} tookMs={}{}headers={}{}body=<null>",
+            log.debug("http_response status={} url={} took_ms={} body=<null>",
                     response.code(),
                     response.request().url(),
-                    tookMs,
-                    System.lineSeparator(),
-                    response.headers(),
-                    System.lineSeparator());
+                    tookMs);
             return response;
         }
 
         String responseBodySummary = summarizeResponseBody(response, responseBody);
-        log.debug("[HTTP-RESP] code={} url={} tookMs={}ms{}headers={}{}body={}",
+        log.debug("http_response status={} url={} took_ms={} body_size={} body={}",
                 response.code(),
                 response.request().url(),
                 tookMs,
-                System.lineSeparator(),
-                response.headers(),
-                System.lineSeparator(),
+                responseBodySummary.length(),
                 responseBodySummary);
 
         return response;
@@ -85,9 +78,7 @@ public class LoggingInterceptor implements Interceptor {
 
     private String summarizeRequestBody(Request request) {
         RequestBody body = request.body();
-        if (body == null) {
-            return "<empty>";
-        }
+        if (body == null) return "<empty>";
 
         MediaType mediaType = body.contentType();
         long contentLength;
@@ -98,30 +89,29 @@ public class LoggingInterceptor implements Interceptor {
         }
 
         if (isFileLike(mediaType, request.headers())) {
-            return "<file-like request body, size=" + formatLength(contentLength) + ">";
+            return "<file body, size=" + formatLength(contentLength) + ">";
         }
         if (!isTextLike(mediaType)) {
-            return "<binary request body, size=" + formatLength(contentLength) + ">";
+            return "<binary body, size=" + formatLength(contentLength) + ">";
         }
         if (contentLength > maxBodyBytes) {
-            return "<text request body too large, size=" + contentLength + " bytes>";
+            return "<text body too large, size=" + contentLength + ">";
         }
 
         try {
             Buffer buffer = new Buffer();
             body.writeTo(buffer);
             if (buffer.size() > maxBodyBytes) {
-                return "<text request body too large, size=" + buffer.size() + " bytes>";
+                return "<text body too large, size=" + buffer.size() + ">";
             }
-
             Charset charset = mediaType != null ? mediaType.charset(UTF8) : UTF8;
             String text = buffer.readString(charset == null ? UTF8 : charset);
             if (text.length() > maxBodyChars) {
-                return "<text request body too long, chars=" + text.length() + ">";
+                return "<text body too long, chars=" + text.length() + ">";
             }
             return text;
         } catch (IOException ex) {
-            return "<request body read failed: " + ex.getMessage() + ">";
+            return "<body read failed: " + ex.getMessage() + ">";
         }
     }
 
@@ -131,40 +121,32 @@ public class LoggingInterceptor implements Interceptor {
         Headers headers = response.headers();
 
         if (isFileLike(mediaType, headers)) {
-            return "<file-like response body, size=" + formatLength(contentLength) + ">";
+            return "<file body, size=" + formatLength(contentLength) + ">";
         }
         if (!isTextLike(mediaType)) {
-            return "<binary response body, size=" + formatLength(contentLength) + ">";
+            return "<binary body, size=" + formatLength(contentLength) + ">";
         }
         if (contentLength > maxBodyBytes) {
-            return "<text response body too large, size=" + contentLength + " bytes>";
+            return "<text body too large, size=" + contentLength + ">";
         }
 
         try {
             String text = response.peekBody(maxBodyBytes).string();
             if (text.length() > maxBodyChars) {
-                return "<text response body too long, chars=" + text.length() + ">";
+                return "<text body too long, chars=" + text.length() + ">";
             }
             return text;
         } catch (IOException ex) {
-            return "<response body peek failed: " + ex.getMessage() + ">";
+            return "<body peek failed: " + ex.getMessage() + ">";
         }
     }
 
     private boolean isTextLike(MediaType mediaType) {
-        if (mediaType == null) {
-            return false;
-        }
-
+        if (mediaType == null) return false;
         String type = mediaType.type();
         String subtype = mediaType.subtype();
-        if ("text".equalsIgnoreCase(type)) {
-            return true;
-        }
-        if (subtype == null) {
-            return false;
-        }
-
+        if ("text".equalsIgnoreCase(type)) return true;
+        if (subtype == null) return false;
         String normalized = subtype.toLowerCase();
         return normalized.contains("json")
                 || normalized.contains("xml")
@@ -177,26 +159,17 @@ public class LoggingInterceptor implements Interceptor {
 
     private boolean isFileLike(MediaType mediaType, Headers headers) {
         String disposition = headers.get("Content-Disposition");
-        if (disposition != null && disposition.toLowerCase().contains("attachment")) {
-            return true;
-        }
-        if (mediaType == null) {
-            return false;
-        }
-
+        if (disposition != null && disposition.toLowerCase().contains("attachment")) return true;
+        if (mediaType == null) return false;
         String type = mediaType.type();
         String subtype = mediaType.subtype();
         if ("image".equalsIgnoreCase(type)
                 || "video".equalsIgnoreCase(type)
                 || "audio".equalsIgnoreCase(type)
-                || "application".equalsIgnoreCase(type) && "octet-stream".equalsIgnoreCase(subtype)) {
+                || ("application".equalsIgnoreCase(type) && "octet-stream".equalsIgnoreCase(subtype))) {
             return true;
         }
-
-        if (subtype == null) {
-            return false;
-        }
-
+        if (subtype == null) return false;
         String normalized = subtype.toLowerCase();
         return normalized.contains("zip")
                 || normalized.contains("pdf")

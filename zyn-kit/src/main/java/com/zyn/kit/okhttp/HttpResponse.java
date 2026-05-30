@@ -7,30 +7,42 @@ import java.util.Locale;
 import java.util.Map;
 
 /**
- * HTTP 响应封装，隐藏底层 OkHttp 类型。
- *
- * @param statusCode HTTP 状态码，失败时为 -1
- * @param headers    响应头（不可变 Map）
- * @param body       响应体文本
- * @param errorMessage 错误信息（IO 异常等），成功时为 null
+ * HTTP 响应封装。
  */
-public record HttpResponse(int statusCode, Map<String, String> headers, String body, byte[] bodyBytes, String errorMessage) {
+public class HttpResponse {
+
+    private final int statusCode;
+    private final Map<String, String> headers;
+    private final String body;
+    private final byte[] bodyBytes;
+    private final String errorMessage;
+
+    private HttpResponse(int statusCode, Map<String, String> headers, String body, byte[] bodyBytes, String errorMessage) {
+        this.statusCode = statusCode;
+        this.headers = headers != null ? headers : Collections.emptyMap();
+        this.body = body;
+        this.bodyBytes = bodyBytes;
+        this.errorMessage = errorMessage;
+    }
 
     public static HttpResponse success(int statusCode, Map<String, String> headers, String body) {
-        return new HttpResponse(statusCode, headers != null ? headers : Collections.emptyMap(), body, null, null);
+        return new HttpResponse(statusCode, headers, body, null, null);
     }
 
     public static HttpResponse successBytes(int statusCode, Map<String, String> headers, byte[] bodyBytes) {
-        return new HttpResponse(statusCode, headers != null ? headers : Collections.emptyMap(), null, bodyBytes, null);
+        return new HttpResponse(statusCode, headers, null, bodyBytes, null);
     }
 
     public static HttpResponse failure(String errorMessage) {
         return new HttpResponse(-1, Collections.emptyMap(), null, null, errorMessage);
     }
 
-    /**
-     * 是否成功（无错误且状态码 2xx）。
-     */
+    public int statusCode() { return statusCode; }
+    public Map<String, String> headers() { return headers; }
+    public String body() { return body; }
+    public byte[] bodyBytes() { return bodyBytes; }
+    public String errorMessage() { return errorMessage; }
+
     public boolean isSuccessful() {
         return errorMessage == null && statusCode >= 200 && statusCode < 300;
     }
@@ -46,20 +58,13 @@ public record HttpResponse(int statusCode, Map<String, String> headers, String b
      * 获取指定响应头的所有值（逗号分隔时拆分）。
      */
     public List<String> headerValues(String name) {
-        String value = headers.get(name);
-        if (value == null) {
-            return Collections.emptyList();
-        }
+        String value = headers.get(name.toLowerCase(Locale.ROOT));
+        if (value == null) return Collections.emptyList();
         return List.of(value.split(",\\s*"));
     }
 
-    /**
-     * 从 OkHttp Headers 转换为不可变 Map。
-     */
     static Map<String, String> toHeaderMap(okhttp3.Headers okHeaders) {
-        if (okHeaders == null || okHeaders.size() == 0) {
-            return Collections.emptyMap();
-        }
+        if (okHeaders == null || okHeaders.size() == 0) return Collections.emptyMap();
         Map<String, String> map = new LinkedHashMap<>(okHeaders.size());
         for (int i = 0; i < okHeaders.size(); i++) {
             map.put(okHeaders.name(i).toLowerCase(Locale.ROOT), okHeaders.value(i));
@@ -69,9 +74,7 @@ public record HttpResponse(int statusCode, Map<String, String> headers, String b
 
     @Override
     public String toString() {
-        if (errorMessage != null) {
-            return "HttpResponse{error=" + errorMessage + "}";
-        }
+        if (errorMessage != null) return "HttpResponse{error=" + errorMessage + "}";
         return "HttpResponse{status=" + statusCode + ", body=" + (body != null ? body.length() + " chars" : "null") + "}";
     }
 }
