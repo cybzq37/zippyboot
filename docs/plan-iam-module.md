@@ -1,4 +1,4 @@
-# Zippy SYS 模块实施计划
+# Zyn SYS 模块实施计划
 
 ## 1. 目标
 
@@ -7,31 +7,31 @@
 ## 2. 模块结构
 
 ```
-zippy (root)
-├── zippy-common           ← 公共基础 (BaseEntity / 工具类 / 异常)
-├── zippy-infra            ← 基础设施 (mybatis / redis / satoken)
+zyn (root)
+├── zyn-common           ← 公共基础 (BaseEntity / 工具类 / 异常)
+├── zyn-infra            ← 基础设施 (mybatis / redis / satoken)
 ├── apis/                      ← API 契约库
-│   └── zippy-sys-api      ← DTO / VO / Feign 接口
+│   └── zyn-sys-api      ← DTO / VO / Feign 接口
 ├── services/                  ← 可独立运行的服务
-│   └── zippy-sys-service  ← 【新建】系统管理服务 (entity / service / mapper / controller / main)
-└── zippy-app              ← 其他应用，通过 sys-api 调用 sys-service
+│   └── zyn-sys-service  ← 【新建】系统管理服务 (entity / service / mapper / controller / main)
+└── zyn-app              ← 其他应用，通过 sys-api 调用 sys-service
 ```
 
 **依赖链路：**
 ```
-zippy-sys-service (独立运行)
-  ├── zippy-common
-  ├── zippy-infra-mybatis
-  ├── zippy-infra-redis
-  └── zippy-infra-satoken
+zyn-sys-service (独立运行)
+  ├── zyn-common
+  ├── zyn-infra-mybatis
+  ├── zyn-infra-redis
+  └── zyn-infra-satoken
 
-zippy-app (其他应用)
-  └── zippy-sys-api          ← 通过 Feign 调用 sys-service
+zyn-app (其他应用)
+  └── zyn-sys-api          ← 通过 Feign 调用 sys-service
 ```
 
 **设计决策：**
-- zippy-sys-service 可独立启动，同时暴露 REST API 供其他应用调用
-- zippy-sys-api 只放对外契约 (DTO/VO/FeignClient)，不包含 Entity
+- zyn-sys-service 可独立启动，同时暴露 REST API 供其他应用调用
+- zyn-sys-api 只放对外契约 (DTO/VO/FeignClient)，不包含 Entity
 - Entity 是 sys-service 内部实现，不暴露给外部；Controller 中做 Entity ↔ DTO 转换
 - Controller 和 FeignClient 各自独立定义，通过 HTTP 路径和返回类型对齐（松耦合），不通过代码级接口实现绑定
 - 其他应用依赖 sys-api 即可通过 Feign 调用，无需感知数据库模型
@@ -178,7 +178,7 @@ UNIQUE: (user_id, org_id)
 
 ## 4. 包结构
 
-### 4.1 zippy-sys-service — `com.zippy.sys`
+### 4.1 zyn-sys-service — `com.zyn.sys`
 
 Entity 为内部实现，不暴露给外部模块。
 
@@ -248,7 +248,7 @@ controller/
 
 公共字段抽取 `BaseEntity`（id, version, deleted, createBy, createTime, updateBy, updateTime），所有实体继承。
 
-### 4.2 apis/zippy-sys-api — `com.zippy.api.sys`
+### 4.2 apis/zyn-sys-api — `com.zyn.api.sys`
 
 只放对外契约，不包含 Entity。
 
@@ -311,7 +311,7 @@ public class SysAutoConfiguration {
 | `sys:menu:user:{userId}` | List\<MenuTreeDTO\> JSON | 30min | 权限变更 |
 | `sys:user:info:{userId}` | LoginUserDTO JSON | 30min | 用户信息变更 |
 
-使用 `zippy-infra-redis` 的 `RedisClient` 操作。
+使用 `zyn-infra-redis` 的 `RedisClient` 操作。
 
 ### 5.3 LoginHelper 复用
 
@@ -394,36 +394,36 @@ public interface SysUserMapper extends BaseMapper<SysUser> {
 
 ## 8. POM 配置
 
-### 8.1 apis/zippy-sys-api/pom.xml
+### 8.1 apis/zyn-sys-api/pom.xml
 
 ```xml
 <parent>
-    <groupId>com.zippy</groupId>
-    <artifactId>zippy</artifactId>
+    <groupId>com.zyn</groupId>
+    <artifactId>zyn</artifactId>
     <version>1.0.0-SNAPSHOT</version>
 </parent>
-<artifactId>zippy-sys-api</artifactId>
+<artifactId>zyn-sys-api</artifactId>
 
 <dependencies>
     <dependency><groupId>org.springframework.cloud</groupId><artifactId>spring-cloud-starter-openfeign</artifactId></dependency>
 </dependencies>
 ```
 
-### 8.2 services/zippy-sys-service/pom.xml
+### 8.2 services/zyn-sys-service/pom.xml
 
 ```xml
 <parent>
-    <groupId>com.zippy</groupId>
-    <artifactId>zippy</artifactId>
+    <groupId>com.zyn</groupId>
+    <artifactId>zyn</artifactId>
     <version>1.0.0-SNAPSHOT</version>
 </parent>
-<artifactId>zippy-sys-service</artifactId>
+<artifactId>zyn-sys-service</artifactId>
 
 <dependencies>
-    <dependency><groupId>com.zippy</groupId><artifactId>zippy-sys-api</artifactId></dependency>
-    <dependency><groupId>com.zippy</groupId><artifactId>zippy-infra-mybatis</artifactId></dependency>
-    <dependency><groupId>com.zippy</groupId><artifactId>zippy-infra-redis</artifactId></dependency>
-    <dependency><groupId>com.zippy</groupId><artifactId>zippy-infra-satoken</artifactId></dependency>
+    <dependency><groupId>com.zyn</groupId><artifactId>zyn-sys-api</artifactId></dependency>
+    <dependency><groupId>com.zyn</groupId><artifactId>zyn-infra-mybatis</artifactId></dependency>
+    <dependency><groupId>com.zyn</groupId><artifactId>zyn-infra-redis</artifactId></dependency>
+    <dependency><groupId>com.zyn</groupId><artifactId>zyn-infra-satoken</artifactId></dependency>
     <dependency><groupId>org.springframework.boot</groupId><artifactId>spring-boot-starter-web</artifactId></dependency>
     <dependency><groupId>org.springframework.boot</groupId><artifactId>spring-boot-starter-validation</artifactId></dependency>
     <dependency><groupId>org.springframework.security</groupId><artifactId>spring-security-crypto</artifactId></dependency>
@@ -435,18 +435,18 @@ public interface SysUserMapper extends BaseMapper<SysUser> {
 
 ```xml
 <!-- modules 中新增 -->
-<module>apis/zippy-sys-api</module>
-<module>services/zippy-sys-service</module>
+<module>apis/zyn-sys-api</module>
+<module>services/zyn-sys-service</module>
 
 <!-- dependencyManagement 中新增 -->
 <dependency>
-    <groupId>com.zippy</groupId>
-    <artifactId>zippy-sys-api</artifactId>
+    <groupId>com.zyn</groupId>
+    <artifactId>zyn-sys-api</artifactId>
     <version>${project.version}</version>
 </dependency>
 <dependency>
-    <groupId>com.zippy</groupId>
-    <artifactId>zippy-sys-service</artifactId>
+    <groupId>com.zyn</groupId>
+    <artifactId>zyn-sys-service</artifactId>
     <version>${project.version}</version>
 </dependency>
 ```
@@ -458,13 +458,13 @@ public interface SysUserMapper extends BaseMapper<SysUser> {
 | Phase | 内容 | 产出 |
 |-------|------|------|
 | **1** | 建表 SQL + model 实体 + 枚举 | SQL 脚本, 8 个实体, 7 个枚举, BaseEntity |
-| **2** | 模块骨架 | zippy-sys-service POM, SysAutoConfiguration, 8 个 Mapper 接口 |
+| **2** | 模块骨架 | zyn-sys-service POM, SysAutoConfiguration, 8 个 Mapper 接口 |
 | **3** | 用户管理 | SysUserService (CRUD/注册/登录), PasswordUtils, LoginHelper 集成 |
 | **4** | 角色 + 权限管理 | SysRoleService, SysPermissionService, SaPermissionDelegate |
 | **5** | 组织机构 | SysOrganizationService + TreeBuilder 集成 |
 | **6** | 资源管理 | SysResourceService |
 | **7** | 缓存层 | PermissionManager 缓存 + 失效策略 |
-| **8** | API 层 | zippy-sys-api DTO/VO/Feign + Controller |
+| **8** | API 层 | zyn-sys-api DTO/VO/Feign + Controller |
 
 ---
 
@@ -474,4 +474,4 @@ public interface SysUserMapper extends BaseMapper<SysUser> {
 
 2. **Sa-Token Session 数据量** — `LoginUserDTO` 序列化存入 Redis Session，应精简字段，避免存入大对象。
 
-3. **现有 MyBatis Mapper 扫描** — sys-service 的 Mapper 需要被 `@MapperScan` 覆盖。检查 infra-mybatis 的扫描路径是否包含 `com.zippy.sys.mapper`，否则需在 SysAutoConfiguration 中额外配置。
+3. **现有 MyBatis Mapper 扫描** — sys-service 的 Mapper 需要被 `@MapperScan` 覆盖。检查 infra-mybatis 的扫描路径是否包含 `com.zyn.sys.mapper`，否则需在 SysAutoConfiguration 中额外配置。

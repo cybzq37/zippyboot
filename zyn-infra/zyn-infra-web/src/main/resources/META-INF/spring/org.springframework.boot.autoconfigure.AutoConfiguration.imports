@@ -1,0 +1,2 @@
+com.zyn.infra.web.exception.GlobalExceptionAutoConfiguration
+com.zyn.infra.web.response.ResponseAutoConfiguration

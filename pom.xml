@@ -4,18 +4,18 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
-    <groupId>com.zippy</groupId>
-    <artifactId>zippy</artifactId>
+    <groupId>com.zyn</groupId>
+    <artifactId>zyn</artifactId>
     <version>1.0.0-SNAPSHOT</version>
     <packaging>pom</packaging>
-    <name>zippy</name>
+    <name>zyn</name>
     <description>Java 21 + Spring Boot 3.5.x multi-module template</description>
 
     <modules>
-        <module>zippy-kit</module>
-        <module>zippy-infra</module>
-        <module>zippy-api</module>
-        <module>zippy-svc</module>
+        <module>zyn-kit</module>
+        <module>zyn-infra</module>
+        <module>zyn-api</module>
+        <module>zyn-svc</module>
     </modules>
 
     <properties>
@@ -65,63 +65,68 @@
                 <version>${dynamic-datasource.version}</version>
             </dependency>
             <dependency>
-                <groupId>com.zippy</groupId>
-                <artifactId>zippy-kit</artifactId>
+                <groupId>com.zyn</groupId>
+                <artifactId>zyn-kit</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
-                <groupId>com.zippy</groupId>
-                <artifactId>zippy-infra</artifactId>
+                <groupId>com.zyn</groupId>
+                <artifactId>zyn-infra</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
-                <groupId>com.zippy</groupId>
-                <artifactId>zippy-infra-redis</artifactId>
+                <groupId>com.zyn</groupId>
+                <artifactId>zyn-infra-discovery</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
-                <groupId>com.zippy</groupId>
-                <artifactId>zippy-infra-kafka</artifactId>
+                <groupId>com.zyn</groupId>
+                <artifactId>zyn-infra-redis</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
-                <groupId>com.zippy</groupId>
-                <artifactId>zippy-infra-es</artifactId>
+                <groupId>com.zyn</groupId>
+                <artifactId>zyn-infra-kafka</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
-                <groupId>com.zippy</groupId>
-                <artifactId>zippy-infra-mybatis</artifactId>
+                <groupId>com.zyn</groupId>
+                <artifactId>zyn-infra-es</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
-                <groupId>com.zippy</groupId>
-                <artifactId>zippy-infra-storage</artifactId>
+                <groupId>com.zyn</groupId>
+                <artifactId>zyn-infra-mybatis</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
-                <groupId>com.zippy</groupId>
-                <artifactId>zippy-infra-geo</artifactId>
+                <groupId>com.zyn</groupId>
+                <artifactId>zyn-infra-storage</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
-                <groupId>com.zippy</groupId>
-                <artifactId>zippy-infra-web</artifactId>
+                <groupId>com.zyn</groupId>
+                <artifactId>zyn-infra-geo</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
-                <groupId>com.zippy</groupId>
-                <artifactId>zippy-infra-satoken</artifactId>
+                <groupId>com.zyn</groupId>
+                <artifactId>zyn-infra-web</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
-                <groupId>com.zippy</groupId>
-                <artifactId>zippy-sys-api</artifactId>
+                <groupId>com.zyn</groupId>
+                <artifactId>zyn-infra-satoken</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
-                <groupId>com.zippy</groupId>
-                <artifactId>zippy-sys-service</artifactId>
+                <groupId>com.zyn</groupId>
+                <artifactId>zyn-sys-api</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.zyn</groupId>
+                <artifactId>zyn-sys-service</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>

@@ -1,0 +1,116 @@
+package com.zyn.infra.mybatis.handler;
+
+import com.baomidou.mybatisplus.core.toolkit.Assert;
+import com.fasterxml.jackson.core.JacksonException;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JavaType;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.type.TypeFactory;
+import org.apache.ibatis.logging.Log;
+import org.apache.ibatis.logging.LogFactory;
+import org.apache.ibatis.type.BaseTypeHandler;
+import org.apache.ibatis.type.JdbcType;
+import org.apache.ibatis.type.MappedJdbcTypes;
+import org.apache.ibatis.type.MappedTypes;
+import org.postgresql.util.PGobject;
+
+import java.lang.reflect.Field;
+import java.lang.reflect.Type;
+import java.sql.CallableStatement;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+
+/**
+ * PostgreSQL JSONB 字段类型处理器。
+ * <p>
+ * 使用 Jackson 将 Java 对象与 PostgreSQL {@code jsonb} 列相互映射，
+ * 写入时通过 {@link org.postgresql.util.PGobject} 设置类型为 {@code jsonb}。
+ * <p>
+ * 通过 {@link #setObjectMapper(ObjectMapper)} 可注入 Spring 容器中的 ObjectMapper，
+ * 由 {@link com.zyn.infra.mybatis.config.MybatisAutoConfiguration} 自动完成。
+ */
+@MappedTypes({Object.class})
+@MappedJdbcTypes(JdbcType.VARCHAR)
+public class PgJsonbTypeHandler<T> extends BaseTypeHandler<T> {
+
+    protected final Log log = LogFactory.getLog(this.getClass());
+
+    protected final Class<?> type;
+
+    /** @since 3.5.6 */
+    protected Type genericType;
+
+    private static ObjectMapper OBJECT_MAPPER = new ObjectMapper();
+
+    public PgJsonbTypeHandler(Class<?> clazz) {
+        this.type = clazz;
+        Assert.notNull(type, "Type argument cannot be null");
+    }
+
+    /** 自 3.5.6 版本开始支持泛型，需要加上此构造。 */
+    public PgJsonbTypeHandler(Class<?> type, Field field) {
+        this(type);
+        this.genericType = field.getGenericType();
+    }
+
+    @Override
+    public void setNonNullParameter(PreparedStatement ps, int i, T parameter, JdbcType jdbcType) throws SQLException {
+        PGobject jsonbObject = new PGobject();
+        jsonbObject.setType("jsonb");
+        jsonbObject.setValue(toJson(parameter));
+        ps.setObject(i, jsonbObject);
+    }
+
+    @Override
+    public T getNullableResult(ResultSet rs, String columnName) throws SQLException {
+        String json = rs.getString(columnName);
+        return json == null || json.isBlank() ? null : parse(json);
+    }
+
+    @Override
+    public T getNullableResult(ResultSet rs, int columnIndex) throws SQLException {
+        String json = rs.getString(columnIndex);
+        return json == null || json.isBlank() ? null : parse(json);
+    }
+
+    @Override
+    public T getNullableResult(CallableStatement cs, int columnIndex) throws SQLException {
+        String json = cs.getString(columnIndex);
+        return json == null || json.isBlank() ? null : parse(json);
+    }
+
+    public Type getFieldType() {
+        return this.genericType != null ? this.genericType : this.type;
+    }
+
+    public T parse(String json) {
+        ObjectMapper objectMapper = getObjectMapper();
+        TypeFactory typeFactory = objectMapper.getTypeFactory();
+        JavaType javaType = typeFactory.constructType(getFieldType());
+        try {
+            return objectMapper.readValue(json, javaType);
+        } catch (JacksonException e) {
+            log.error("deserialize json: " + json + " to " + javaType + " error", e);
+            throw new RuntimeException(e);
+        }
+    }
+
+    public String toJson(Object obj) {
+        try {
+            return getObjectMapper().writeValueAsString(obj);
+        } catch (JsonProcessingException e) {
+            log.error("serialize " + obj + " to json error", e);
+            throw new RuntimeException(e);
+        }
+    }
+
+    public static ObjectMapper getObjectMapper() {
+        return OBJECT_MAPPER;
+    }
+
+    public static void setObjectMapper(ObjectMapper objectMapper) {
+        Assert.notNull(objectMapper, "ObjectMapper should not be null");
+        OBJECT_MAPPER = objectMapper;
+    }
+}

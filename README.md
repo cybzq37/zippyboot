@@ -1,17 +1,17 @@
-# zippy
+# zyn
 
 Java 21 + Spring Boot 3.5.x
 
 ## Modules
 
-- zippy-kit: 公共 utility toolkit (Jackson / OkHttp / Id 生成器 / 通用 DTO)
-- zippy-infra: 基础设施 (Redis / Kafka / MyBatis / ES / Storage / Geo / Web / Sa-Token)
-- zippy-api: API 契约 (DTO / HttpExchange 接口)
-  - zippy-sys-api: 系统管理 API
-- zippy-svc: 服务实现
-  - zippy-sys-service: 系统管理服务
-  - zippy-netty-service: Netty 服务
-- zippy-demo: 示例应用
+- zyn-kit: 公共 utility toolkit (Jackson / OkHttp / Id 生成器 / 通用 DTO)
+- zyn-infra: 基础设施 (Redis / Kafka / MyBatis / ES / Storage / Geo / Web / Sa-Token)
+- zyn-api: API 契约 (DTO / HttpExchange 接口)
+  - zyn-sys-api: 系统管理 API
+- zyn-svc: 服务实现
+  - zyn-sys-service: 系统管理服务
+  - zyn-netty-service: Netty 服务
+- zyn-demo: 示例应用
 
 ## Tech Stack
 
@@ -39,11 +39,11 @@ mvn clean package
 ## Run
 
 ```bash
-mvn -pl zippy-demo spring-boot:run
+mvn -pl zyn-demo spring-boot:run
 ```
 
 ```bash
-mvn -pl zippy-svc/zippy-netty-service spring-boot:run
+mvn -pl zyn-svc/zyn-netty-service spring-boot:run
 ```
 
 ## API Docs
@@ -67,8 +67,8 @@ sa-token:
   token-style: uuid       # token 风格：uuid/simple-uuid/random-32/random-64/random-128/tik
   is-log: true            # 是否输出操作日志
 
-# zippy 扩展配置
-zippy:
+# zyn 扩展配置
+zyn:
   satoken:
     enabled: true           # 是否启用（默认 true）
     login-type: login       # 登录类型标识
@@ -88,11 +88,11 @@ mybatis-plus:
 # 通过日志级别控制 SQL 打印开关
 logging:
   level:
-    com.zippy.**.mapper: debug   # 开启 SQL 打印
-    # com.zippy.**.mapper: info  # 关闭 SQL 打印
+    com.zyn.**.mapper: debug   # 开启 SQL 打印
+    # com.zyn.**.mapper: info  # 关闭 SQL 打印
 
-# zippy 扩展配置
-zippy:
+# zyn 扩展配置
+zyn:
   mybatis:
     enabled: true   # 是否启用 MyBatis 扩展（默认 true）
 ```
@@ -100,7 +100,7 @@ zippy:
 ### Storage
 
 ```yaml
-zippy:
+zyn:
   storage:
     enabled: true
     # LOCAL | S3
@@ -115,7 +115,7 @@ zippy:
       root-path: ./uploads
       access-path-prefix: /uploads
     s3:
-      bucket: zippy
+      bucket: zyn
       endpoint: ""
       region: us-east-1
       access-key: ""
@@ -129,23 +129,23 @@ zippy:
 项目为三层多模块结构，所有模块共享同一版本号，由根 POM 统一管理：
 
 ```
-zippy (root)
-├── zippy-kit
-├── zippy-infra
-│   ├── zippy-infra-redis
-│   ├── zippy-infra-kafka
-│   ├── zippy-infra-es
-│   ├── zippy-infra-mybatis
-│   ├── zippy-infra-storage
-│   ├── zippy-infra-geo
-│   ├── zippy-infra-web
-│   └── zippy-infra-satoken
-├── zippy-api
-│   └── zippy-sys-api
-├── zippy-svc
-│   ├── zippy-sys-service
-│   └── zippy-netty-service
-└── zippy-demo
+zyn (root)
+├── zyn-kit
+├── zyn-infra
+│   ├── zyn-infra-redis
+│   ├── zyn-infra-kafka
+│   ├── zyn-infra-es
+│   ├── zyn-infra-mybatis
+│   ├── zyn-infra-storage
+│   ├── zyn-infra-geo
+│   ├── zyn-infra-web
+│   └── zyn-infra-satoken
+├── zyn-api
+│   └── zyn-sys-api
+├── zyn-svc
+│   ├── zyn-sys-service
+│   └── zyn-netty-service
+└── zyn-demo
 ```
 
 各子模块通过 `<parent>` 继承版本，内部依赖通过根 POM 的 `dependencyManagement` + `${project.version}` 统一管理，无需在子模块中硬编码版本。

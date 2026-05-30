@@ -1,3 +1,0 @@
-com.zippy.kit.jackson.config.JacksonConfig
-com.zippy.kit.jackson.config.ValidatorConfig
-com.zippy.kit.okhttp.HttpClientAutoConfiguration
